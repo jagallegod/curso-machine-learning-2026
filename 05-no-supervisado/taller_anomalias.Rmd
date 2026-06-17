@@ -1,0 +1,140 @@
+---
+title: "Detección de anomalías con LOF en R"
+output:
+ html_notebook: default
+---
+
+# 1. Introducción
+
+\
+
+- Una **anomalía** es un caso que se aparta mucho del patrón general (un *outlier*).
+
+- En economía y políticas públicas, detectar lo "raro" es muy valioso: **transacciones fraudulentas**, **contratos públicos atípicos** (posible corrupción), evasión, fallas o errores en los datos.
+
+- Suele ser un problema **no supervisado**: no tenemos ejemplos etiquetados de "fraude".
+
+- Usaremos el método **LOF** (*Local Outlier Factor*), que marca como anómalos los puntos que están en zonas **menos densas** que sus vecinos.
+
+\
+
+# 2. Datos
+
+\
+
+- Trabajaremos con un conjunto (ilustrativo, en 2 dimensiones) de **operaciones financieras**, descritas por dos características: el **monto** (estandarizado) y la **frecuencia** de operaciones del cliente.
+
+- La mayoría de las operaciones forma grupos densos (perfiles "normales"); algunas quedan dispersas y son sospechosas.
+
+\
+
+```{r}
+trans <- read.csv("data/anomalias.csv")
+str(trans)
+```
+
+\
+
+- Veámoslas. A simple vista, ¿cuáles parecen atípicas?
+
+\
+
+```{r}
+plot(trans$monto, trans$frecuencia, pch = 16, col = "grey50",
+     xlab = "Monto (estandarizado)", ylab = "Frecuencia de operaciones",
+     main = "Operaciones financieras")
+```
+
+\
+
+# 3. Calcular el LOF
+
+\
+
+- Usaremos la función `lof()` del paquete `dbscan`. Si no lo tienes instalado:
+
+\
+
+```{r, eval=FALSE}
+install.packages("dbscan")
+```
+
+\
+
+```{r}
+library(dbscan)
+```
+
+\
+
+- LOF se basa en **distancias**, así que conviene estandarizar las variables. El parámetro `minPts` indica cuántos vecinos se usan para estimar la densidad local (un valor común es 10–20):
+
+\
+
+```{r}
+scores <- lof(scale(trans), minPts = 20)
+summary(scores)
+```
+
+\
+
+- `lof()` devuelve un puntaje por operación: cercano a 1 significa densidad parecida a la de sus vecinas (normal); mucho mayor que 1 indica una operación aislada (sospechosa).
+
+\
+
+# 4. Identificar las operaciones sospechosas
+
+\
+
+- Fijemos un umbral (aquí, `LOF > 1.5`) para marcar los casos atípicos:
+
+\
+
+```{r}
+trans$lof <- scores
+trans$atipica <- scores > 1.5
+table(trans$atipica)
+```
+
+\
+
+- Visualicemos el resultado: tamaño proporcional al puntaje LOF y en rojo las marcadas como atípicas (posible fraude):
+
+\
+
+```{r}
+plot(trans$monto, trans$frecuencia,
+     cex = pmin(trans$lof, 3) * 0.6 + 0.4,
+     pch = ifelse(trans$atipica, 17, 16),
+     col = ifelse(trans$atipica, "red", "grey55"),
+     xlab = "Monto (estandarizado)", ylab = "Frecuencia de operaciones",
+     main = "Operaciones atípicas según LOF")
+legend("topright", c("Normal", "Atípica (posible fraude)"), pch = c(16, 17),
+       col = c("grey55", "red"), bty = "n")
+```
+
+\
+
+- Veamos las operaciones con mayor puntaje (las más sospechosas, que un analista revisaría primero):
+
+\
+
+```{r}
+head(trans[order(-trans$lof), ], 5)
+```
+
+\
+
+# 5. Para cerrar
+
+\
+
+- **No hay un umbral universal**: hay que decidir cuántos casos marcar, según el contexto (¿qué cuesta más, dejar pasar un fraude o investigar una operación legítima?).
+
+- LOF detecta anomalías **locales** (relativas a su vecindario), no solo las globales.
+
+- Como se basa en distancias, **estandarizar** las variables es importante.
+
+- La misma técnica sirve para señalar **contratos públicos atípicos** que ameritan auditoría, lecturas anómalas de sensores, o errores de captura en una base.
+
+- Como ejercicio: cambia `minPts` (por ejemplo a 5 o a 50) y el umbral, y observa cómo cambian las operaciones detectadas.

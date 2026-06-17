@@ -1,0 +1,490 @@
+\documentclass{beamer}
+
+\usepackage{soul}
+
+
+\usetheme{Boadilla}
+
+\setbeamersize{text margin left=1cm,text margin right=1cm}
+
+% DEFINITON FOOTLINE
+% here: empty
+\setbeamertemplate{footline}
+{%
+\begin{beamercolorbox}{}
+\end{beamercolorbox}%
+}
+
+
+\usepackage[english]{babel}
+\usepackage[latin1]{inputenc}
+\usepackage{color}
+\usepackage{graphicx}
+\graphicspath{{img/}}
+\usepackage{setspace}
+%\usepackage[pdftex]{graphicx}
+
+%TABELLEN
+\usepackage{array}
+%\usepackage{ctable}		%Tabellen mit Fussoten
+\usepackage{multirow}
+\usepackage{booktabs}
+	% Neue Tabellenbefehle in der array Umgebung
+	\renewcommand{\arraystretch}{1.2} % Zeilenabstand
+	\newcolumntype{C}[1]{>{\centering\let\\\tabularnewline}p{#1}}
+	\newcolumntype{R}[1]{>{\raggedleft\let\\\tabularnewline}p{#1}}
+	\newcolumntype{L}[1]{>{\raggedright\let\\\tabularnewline}p{#1}}
+
+\setbeamercovered{transparent}
+
+
+\title{Predicción numérica: Regresión, Ridge y Lasso}
+\author{Jorge Gallego}
+\institute{Inter-American Development Bank}
+
+\date{Bogotá Summer School in Economics --- 2026}
+
+\begin{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\frame{\titlepage}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Agenda de la sesión}
+
+\begin{itemize}
+
+\item Cambiamos de problema: del \textbf{clasificar} (categorías) al \textbf{predecir valores numéricos} \vspace{0.3cm}
+
+\item[1.] Regresión lineal y logística (un repaso con mirada predictiva) \vspace{0.3cm}
+
+\item[2.] Regularización: Ridge y Lasso \vspace{0.3cm}
+
+\item La regresión es, también, un algoritmo de \textit{machine learning}: estima parámetros con los datos para hacer predicciones
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%   PARTE 1: REGRESIÓN   %%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+\begin{center}
+{\Huge \textbf{Parte 1}}\\[0.5cm]
+{\large Regresión lineal y logística}
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Introducción}
+
+\begin{itemize}
+\item Hasta ahora solo hicimos predicciones \textbf{categóricas} (clasificación) \vspace{0.3cm}
+
+\item En muchos casos lo que importa es una predicción \textbf{numérica} \vspace{0.3cm}
+
+\item La \textbf{regresión} es, de lejos, el método más usado para esto \vspace{0.3cm}
+
+\item Haremos un repaso rápido (seguramente ya la dominan), pero con énfasis en el enfoque \textbf{predictivo}
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Fundamentos básicos}
+
+\begin{itemize}
+\item Una regresión especifica la relación entre una variable \textbf{dependiente} $y$ y una o más \textbf{independientes} $x$ \vspace{0.3cm}
+
+\item El método se usa con tres enfoques distintos:
+\begin{itemize}
+\item describir cómo \textit{varían} las características observables
+\item cuantificar relaciones \textit{causales}
+\item identificar patrones para \textit{predecir} comportamiento futuro
+\end{itemize}
+\vspace{0.3cm}
+
+\item Nosotros enfatizaremos el enfoque \textbf{predictivo}
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Regresión lineal simple}
+
+\begin{itemize}
+\item $y$ depende de un único predictor $x$ de forma lineal: $y = \alpha + \beta x + \varepsilon$ \vspace{0.3cm}
+
+\item Estimamos $\alpha$ y $\beta$ por \textbf{Mínimos Cuadrados Ordinarios} (OLS): minimizando la suma de residuos al cuadrado
+\[
+\sum_{i=1}^n (y_i - \hat{y}_i)^2 = \sum_{i=1}^n e_i^2
+\]
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Regresión lineal simple}
+
+\begin{figure}
+\includegraphics[scale=0.8]{OLS.pdf}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Correlación}
+
+\begin{itemize}
+\item La correlación mide la asociación \textbf{lineal} entre dos variables \vspace{0.3cm}
+
+\item El indicador más usado es el coeficiente de Pearson:
+\[
+\rho_{x,y} = \frac{Cov(x,y)}{\sigma_x \sigma_y}
+\]
+
+\item Va de $-1$ a $1$; cuanto más se aleje de 0, mayor asociación (débil: 0.1--0.3; moderada: 0.3--0.5; fuerte: $>0.5$) \vspace{0.3cm}
+
+\item Ojo: correlación \textbf{no} es causalidad
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Regresión lineal múltiple}
+
+\begin{itemize}
+\item Extendemos a varios predictores:
+\[
+y = \beta_0 + \beta_1 x_1 + \beta_2 x_2 + \cdots + \beta_k x_k + \varepsilon
+\]
+
+\item En forma matricial, $\mathbf{y} = \mathbf{X}\boldsymbol{\beta} + \boldsymbol{\varepsilon}$, y la solución OLS es:
+\[
+\hat{\boldsymbol{\beta}} = (\mathbf{X}^T\mathbf{X})^{-1}\mathbf{X}^T\mathbf{y}
+\]
+
+\item Con $\hat{\boldsymbol{\beta}}$ predecimos: $\hat{\mathbf{y}} = \mathbf{X}\hat{\boldsymbol{\beta}}$. Es un algoritmo más de \textit{machine learning}
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Ventajas y desventajas}
+
+\begin{itemize}
+\item \textbf{Ventajas}: es el método más popular para datos numéricos; se adapta a casi cualquier tarea; estima la fuerza y el tamaño de cada relación \vspace{0.4cm}
+
+\item \textbf{Desventajas}: hace supuestos fuertes sobre los datos; la especificación se decide \textit{ex ante} (el humano elige las variables); no maneja por sí solo los datos ausentes
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Variable dependiente dicotómica}
+
+\begin{itemize}
+\item ¿Y si el \textit{outcome} es una \textbf{dummy} (0/1)? Por ejemplo, ``¿el cliente hace default?'' \vspace{0.3cm}
+
+\item Podríamos usar OLS directamente: el \textbf{Modelo de Probabilidad Lineal} (MPL)
+\[
+y = \beta_1 + \beta_2 x_2 + \cdots + \beta_k x_k + u
+\]
+
+\item Es simple, pero tiene problemas...
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Problemas del MPL}
+
+\begin{itemize}
+\item[1.] Nada garantiza que la probabilidad predicha esté entre 0 y 1 (¡puede dar negativa o mayor que 1!) \vspace{0.3cm}
+
+\item[2.] El efecto marginal de cada $x$ es \textbf{constante} (poco realista) \vspace{0.3cm}
+
+\item[3.] Se viola la homocedasticidad (esto es lo menos grave: se corrige con errores estándar robustos) \vspace{0.3cm}
+
+\item Los modelos \textbf{no lineales} (Logit, Probit) resuelven los dos primeros
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Modelos no lineales}
+
+\begin{itemize}
+\item Modelamos la probabilidad de éxito con una función $G$ que siempre cae entre 0 y 1:
+\[
+P(y=1 \mid \mathbf{x}) = G(\beta_1 + \beta_2 x_2 + \cdots + \beta_k x_k) = G(\mathbf{x}\boldsymbol{\beta})
+\]
+con $0 < G(z) < 1$ para todo $z$.
+
+\item \textbf{Logit}: $G$ es la función logística, $\Lambda(z) = \dfrac{e^z}{1+e^z}$ \vspace{0.2cm}
+
+\item \textbf{Probit}: $G$ es la normal estándar acumulada, $\Phi(z)$
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{La función logística (Logit)}
+
+\begin{figure}
+\includegraphics[scale=0.65]{logisticcurve.pdf}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Estimación: máxima verosimilitud}
+
+\begin{itemize}
+\item En el MPL se usa OLS; en Logit y Probit \textbf{no} se puede \vspace{0.3cm}
+
+\item Se usa \textbf{máxima verosimilitud} (EMV)
+
+\end{itemize}
+
+\begin{block}{Intuición}
+Se eligen los parámetros $\hat{\boldsymbol{\beta}}$ que hacen más probable observar los datos que efectivamente tenemos: si $y_i = 1$, el modelo debería predecir una probabilidad cercana a 1 para ese caso.
+\end{block}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Bondad de ajuste}
+
+\begin{itemize}
+\item \textbf{Porcentaje de pronósticos correctos}: si $\hat{P}(\mathbf{x}_i) > 0.5$ predecimos $\hat{y}_i = 1$, si no $\hat{y}_i = 0$; medimos la proporción de aciertos \vspace{0.4cm}
+
+\item \textbf{Pseudo $R^2$}: $1 - \dfrac{L_{irr}}{L_0}$, comparando la verosimilitud del modelo completo con la del modelo solo con intercepto \vspace{0.3cm}
+
+\item \textbf{Al taller}: predecir gastos médicos con regresión (lineal y logística) sobre la base \texttt{insurance.csv}
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%   PARTE 2: RIDGE Y LASSO   %%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+\begin{center}
+{\Huge \textbf{Parte 2}}\\[0.5cm]
+{\large Regularización: Ridge y Lasso}
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{¿Por qué ir más allá de OLS?}
+
+\begin{itemize}
+\item El modelo lineal es muy útil, pero para \textbf{predecir} tiene dos problemas \vspace{0.3cm}
+
+\item \textbf{Poder predictivo}: si el número de variables $p$ es grande frente a las observaciones $n$, la varianza de OLS crece (y si $p > n$, ¡no hay solución única!) \vspace{0.3cm}
+
+\item \textbf{Interpretabilidad}: con muchas variables irrelevantes, el modelo es difícil de leer, y OLS casi nunca da coeficientes \textbf{exactamente} 0
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Regularización}
+
+\begin{itemize}
+\item Los métodos de \textbf{regularización} atacan ambos problemas \vspace{0.3cm}
+
+\item Idea: ``encoger'' (\textit{shrink}) los coeficientes hacia 0 para las variables que lo merecen \vspace{0.3cm}
+
+\item Según el método, los coeficientes se acercan a 0 o se vuelven \textbf{exactamente} 0 (selección de variables) \vspace{0.3cm}
+
+\item Esto reduce la varianza y mejora la predicción (a costa de un poco más de sesgo)
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Regresión Ridge}
+
+\begin{itemize}
+\item OLS minimiza la suma de residuos al cuadrado (RSS). Ridge añade una \textbf{penalidad}:
+\[
+\underbrace{\sum_{i=1}^n\Big(y_i - \beta_0 - \textstyle\sum_{j=1}^p \beta_j x_{ij}\Big)^2}_{RSS} + \lambda \sum_{j=1}^p \beta_j^2
+\]
+
+\item $\lambda \geq 0$ es un parámetro de \textbf{sintonización}: pesa cuánto importa la penalidad \vspace{0.2cm}
+
+\item Si $\lambda = 0$, Ridge $=$ OLS; si $\lambda \to \infty$, los coeficientes tienden a 0
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Ridge: trayectoria de coeficientes}
+
+\begin{figure}
+\includegraphics[scale=1.1]{ridge1.pdf}
+\end{figure}
+
+\begin{center}
+\small A mayor $\lambda$, más se encogen los coeficientes hacia 0
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Ridge vs. OLS: el trade-off sesgo--varianza}
+
+\begin{itemize}
+\item ¿Por qué Ridge puede mejorar a OLS? Por el \textbf{trade-off sesgo--varianza} \vspace{0.3cm}
+
+\item Al subir $\lambda$: baja la \textbf{varianza} de las predicciones, pero sube el \textbf{sesgo} \vspace{0.3cm}
+
+\item Existe un $\lambda$ que minimiza el error cuadrático medio (MSE $=$ varianza $+$ sesgo$^2$) \vspace{0.3cm}
+
+\item Ridge ayuda mucho cuando $p$ es grande frente a $n$
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Ridge vs. OLS}
+
+\begin{figure}
+\includegraphics[scale=1.1]{ridge2.pdf}
+\end{figure}
+
+\begin{center}
+\small Verde: varianza \quad Negro: sesgo$^2$ \quad Morado: MSE
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Lasso}
+
+\begin{itemize}
+\item Problema de Ridge: los coeficientes nunca son \textbf{exactamente} 0, así que ninguna variable se descarta del todo \vspace{0.3cm}
+
+\item \textbf{Lasso} cambia la penalidad de $\beta_j^2$ a $|\beta_j|$:
+\[
+RSS + \lambda \sum_{j=1}^p |\beta_j|
+\]
+
+\item Igual que Ridge, encoge los coeficientes; pero \textbf{a diferencia} de Ridge, algunos sí se vuelven 0
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Lasso: selección de variables}
+
+\begin{itemize}
+\item Al volver 0 algunos coeficientes, Lasso \textbf{selecciona variables} automáticamente \vspace{0.2cm}
+\item El modelo resultante es más fácil de interpretar
+\end{itemize}
+
+\begin{figure}
+\includegraphics[scale=1.1]{lasso1.pdf}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{¿Lasso o Ridge?}
+
+\begin{itemize}
+\item Ninguno domina al otro en general \vspace{0.3cm}
+
+\item Si el \textit{outcome} depende de \textbf{pocas} variables, suele ganar \textbf{Lasso} \vspace{0.3cm}
+
+\item Si depende de \textbf{muchas} variables, suele ganar \textbf{Ridge} \vspace{0.3cm}
+
+\item En la práctica, dejamos que los datos decidan, vía \textbf{validación cruzada}
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{La selección de $\lambda$ (abrebocas)}
+
+\begin{itemize}
+\item ¿Cómo elegir $\lambda$? La intuición es simple: \vspace{0.3cm}
+
+\begin{itemize}
+\item se prueba un conjunto de valores de $\lambda$
+\item para cada uno se calcula el error de predicción del modelo
+\item se elige el $\lambda$ con el mejor error
+\end{itemize}
+\vspace{0.3cm}
+
+\item La clave está en \textbf{cómo} se construye ese error: \textbf{validación cruzada} (\textit{cross-validation}) \vspace{0.3cm}
+
+\item Lo veremos en detalle en la próxima sesión, sobre \textbf{desempeño de modelos}
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Resumen de la sesión}
+
+\begin{itemize}
+\item La \textbf{regresión} predice valores numéricos; el \textbf{logit/probit}, probabilidades para un \textit{outcome} binario \vspace{0.3cm}
+
+\item \textbf{Ridge} y \textbf{Lasso} regularizan: encogen los coeficientes para mejorar la predicción cuando hay muchas variables \vspace{0.3cm}
+
+\item \textbf{Lasso} además hace selección de variables (coeficientes exactamente 0) \vspace{0.3cm}
+
+\item El parámetro $\lambda$ se elige con \textbf{validación cruzada}: el puente hacia la próxima sesión
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{document}

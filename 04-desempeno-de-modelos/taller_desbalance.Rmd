@@ -1,0 +1,147 @@
+---
+title: "Desbalance de clase y boosting en R"
+output:
+ html_notebook: default
+---
+
+# 1. Introducción
+
+\
+
+- Hay problemas donde la clase de interés es **rara**: fraude, enfermedades poco frecuentes, clientes que sí compran.
+
+- Cuando una clase domina, la **precisión total engaña**: clasificar todo como la clase mayoritaria ya da una precisión altísima, pero inútil.
+
+- Veremos cómo diagnosticar el problema y dos formas de atacarlo: **re-muestreo** (con el paquete `ROSE`) y **boosting**.
+
+\
+
+# 2. Datos
+
+\
+
+- Usamos la muestra de 5.000 clientes del banco portugués. El *outcome* `y` indica si el cliente adquiere el depósito a plazo:
+
+\
+
+```{r}
+bank <- read.csv("data/bank.csv", stringsAsFactors = TRUE)
+prop.table(table(bank$y))
+```
+
+\
+
+- Solo cerca del 11% dice "yes": la clase de interés es **minoritaria**.
+
+- Dividamos en entrenamiento y prueba:
+
+\
+
+```{r}
+set.seed(123)
+train_sample <- sample(nrow(bank), 0.9 * nrow(bank))
+bank_train <- bank[train_sample, ]
+bank_test  <- bank[-train_sample, ]
+```
+
+\
+
+# 3. El problema: un modelo "ciego" a la minoría
+
+\
+
+- Entrenemos un árbol C5.0 y evaluémoslo (la columna 20 es `y`):
+
+\
+
+```{r}
+library(C50)
+library(caret)
+bank_tree <- C5.0(bank_train[-20], bank_train$y)
+pred_tree <- predict(bank_tree, bank_test)
+confusionMatrix(data = pred_tree, reference = bank_test$y, positive = "yes")
+```
+
+\
+
+- La precisión total es alta (~90%), pero fíjate en la **sensibilidad**: el modelo detecta solo una fracción de los clientes que **sí** compran. Para el banco, esos son justamente los casos valiosos.
+
+\
+
+# 4. Solución 1: re-muestreo con ROSE
+
+\
+
+- La idea es **balancear** la base de entrenamiento. El paquete `ROSE` ofrece submuestreo, sobremuestreo y una combinación de ambos. Si no lo tienes instalado:
+
+\
+
+```{r, eval=FALSE}
+install.packages("ROSE")
+```
+
+\
+
+```{r}
+library(ROSE)
+```
+
+\
+
+- Usamos `ovun.sample()` con `method = "both"` (combina sobre y submuestreo) para obtener una base de entrenamiento con clases más equilibradas:
+
+\
+
+```{r}
+bank_train_bal <- ovun.sample(y ~ ., data = bank_train, method = "both",
+                              N = nrow(bank_train), seed = 123)$data
+prop.table(table(bank_train_bal$y))
+```
+
+\
+
+- Ahora las clases están cerca del 50/50. Reentrenamos el árbol sobre esta base balanceada y evaluamos en la base de prueba **original** (que NO debe tocarse):
+
+\
+
+```{r}
+bank_tree_bal <- C5.0(bank_train_bal[-20], bank_train_bal$y)
+pred_bal <- predict(bank_tree_bal, bank_test)
+confusionMatrix(data = pred_bal, reference = bank_test$y, positive = "yes")
+```
+
+\
+
+- La **sensibilidad sube de forma notable**: ahora detectamos muchos más de los que sí compran. El costo es que la precisión total y la especificidad bajan algo (más falsos positivos). Es el *trade-off* de siempre: ¿qué error es más costoso para el negocio?
+
+\
+
+# 5. Solución 2: boosting
+
+\
+
+- Otra vía es un modelo más potente. El **boosting** entrena árboles en secuencia, dando más peso a los casos mal clasificados. En C5.0 se activa con el parámetro `trials`:
+
+\
+
+```{r}
+bank_boost <- C5.0(bank_train[-20], bank_train$y, trials = 10)
+pred_boost <- predict(bank_boost, bank_test)
+confusionMatrix(data = pred_boost, reference = bank_test$y, positive = "yes")
+```
+
+\
+
+- El *boosting* (10 árboles) mejora el desempeño global respecto al árbol simple. Combinarlo con el re-muestreo suele dar aún mejores resultados sobre la clase minoritaria.
+
+\
+
+# 6. Para cerrar
+
+\
+
+- Con desbalance, **no mires solo la precisión total**: usa sensibilidad, kappa y AUC.
+
+- Herramientas: re-muestreo (submuestreo, sobremuestreo, sintético con SMOTE/ROSE), ajuste de costos/umbral, y modelos de ensamble como el *boosting*.
+
+- Como ejercicio: prueba `method = "over"` y `method = "under"` en `ovun.sample()`, y combina re-muestreo con `trials = 10`. Compara la sensibilidad en cada caso.

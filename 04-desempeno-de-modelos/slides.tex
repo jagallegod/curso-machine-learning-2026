@@ -1,0 +1,779 @@
+\documentclass{beamer}
+
+\usepackage{soul}
+
+
+\usetheme{Boadilla}
+
+\setbeamersize{text margin left=1cm,text margin right=1cm}
+
+% DEFINITON FOOTLINE
+% here: empty
+\setbeamertemplate{footline}
+{%
+\begin{beamercolorbox}{}
+\end{beamercolorbox}%
+}
+
+
+\usepackage[english]{babel}
+\usepackage[latin1]{inputenc}
+\usepackage{color}
+\usepackage{graphicx}
+\graphicspath{{img/}}
+\usepackage{setspace}
+%\usepackage[pdftex]{graphicx}
+
+%TABELLEN
+\usepackage{array}
+%\usepackage{ctable}		%Tabellen mit Fussoten
+\usepackage{multirow}
+\usepackage{booktabs}
+	% Neue Tabellenbefehle in der array Umgebung
+	\renewcommand{\arraystretch}{1.2} % Zeilenabstand
+	\newcolumntype{C}[1]{>{\centering\let\\\tabularnewline}p{#1}}
+	\newcolumntype{R}[1]{>{\raggedleft\let\\\tabularnewline}p{#1}}
+	\newcolumntype{L}[1]{>{\raggedright\let\\\tabularnewline}p{#1}}
+
+\setbeamercovered{transparent}
+
+
+\title{Desempeño de modelos}
+\author{Jorge Gallego}
+\institute{Inter-American Development Bank}
+
+\date{Bogotá Summer School in Economics --- 2026}
+
+\begin{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\frame{\titlepage}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Agenda de la sesión}
+
+\begin{itemize}
+
+\item Ya sabemos entrenar varios modelos. Ahora: ¿cómo saber si un modelo es \textbf{bueno} y cómo \textbf{mejorarlo}? \vspace{0.3cm}
+
+\item[1.] Evaluación del desempeño (métricas y validación) \vspace{0.3cm}
+
+\item[2.] Mejorando el desempeño:
+\begin{itemize}
+\item Ingeniería y selección de variables; importancia
+\item Desbalance de clase
+\item Sobreajuste (\textit{overfitting}), ensamblaje y boosting
+\end{itemize}
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%   PARTE 1: EVALUACIÓN   %%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+\begin{center}
+{\Huge \textbf{Parte 1}}\\[0.5cm]
+{\large Evaluación del desempeño}
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Introducción}
+
+\begin{itemize}
+\item Queremos que los algoritmos pronostiquen \textbf{bien} en datos futuros \vspace{0.3cm}
+
+\item Pero hay distintas concepciones (métricas) de lo que es un buen pronóstico \vspace{0.3cm}
+
+\item Veremos varias medidas de desempeño y cuándo conviene cada una \vspace{0.3cm}
+
+\item Y técnicas para estimar el desempeño \textbf{futuro} de un modelo
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Precisión total... y su trampa}
+
+\begin{itemize}
+\item Lo más obvio: la \textbf{precisión total} (proporción de casos bien clasificados) \vspace{0.3cm}
+
+\item Pero cuidado. Supongamos que 1 de cada 1000 bebés nace con un defecto genético \vspace{0.3cm}
+
+\item Un algoritmo que clasifica a \textbf{todos} como sanos acierta el 99.9\% de las veces \vspace{0.3cm}
+
+\item ¡Pero se equivoca en el 100\% de los casos que importan! La precisión total, sola, puede engañar
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Matriz de confusión}
+
+\begin{itemize}
+\item \textbf{Verdaderos positivos} (TP): bien clasificados en la categoría de interés \vspace{0.2cm}
+\item \textbf{Verdaderos negativos} (TN): bien clasificados fuera de ella \vspace{0.2cm}
+\item \textbf{Falsos positivos} (FP): clasificados en ella por error \vspace{0.2cm}
+\item \textbf{Falsos negativos} (FN): dejados fuera por error
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{La matriz de confusión}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.5}
+\begin{tabular}{cc|cc}
+ & & \multicolumn{2}{c}{\textbf{Predicción}} \\
+ & & Positivo & Negativo \\
+\cline{2-4}
+\multirow{2}{*}{\rotatebox{90}{\textbf{Real}}} & Positivo & TP & FN \\
+ & Negativo & FP & TN \\
+\end{tabular}
+\end{center}
+
+\vspace{0.5cm}
+
+\begin{itemize}
+\item La diagonal (TP y TN) son los aciertos; fuera de ella, los errores \vspace{0.2cm}
+\item Casi todas las métricas de clasificación se derivan de estas cuatro cantidades
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Ejemplo: predicción de SMS spam}
+
+\begin{figure}
+\includegraphics[scale=1]{confusion.pdf}
+\end{figure}
+\tiny Fuente: Lantz (2015)
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Medidas básicas}
+
+De la matriz de confusión:
+\[
+Accuracy = \frac{TP+TN}{TP+TN+FP+FN}
+\]
+\[
+Error\ Rate = 1 - Accuracy
+\]
+
+\vspace{0.3cm}
+Buscamos maximizar la precisión y minimizar el error... pero ya vimos que eso no basta cuando hay \textbf{desbalance}.
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Estadístico Kappa}
+
+\begin{itemize}
+\item Ajusta la precisión por los aciertos que ocurrirían \textbf{por puro azar}
+\[
+\kappa = \frac{Pr(a) - Pr(e)}{1 - Pr(e)}
+\]
+donde $Pr(a)$ es la concordancia observada y $Pr(e)$ la esperada por azar. \vspace{0.3cm}
+
+\item Útil con \textbf{desbalance de clase} (donde es fácil tener precisión alta clasificando todo en la clase mayoritaria) \vspace{0.3cm}
+
+\item Va de 0 a 1: $\leq 0.2$ muy baja; 0.2--0.4 baja; 0.4--0.6 moderada; 0.6--0.8 alta; $>0.8$ muy alta
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Kappa: ejemplo (SMS spam)}
+
+\begin{columns}
+\begin{column}{0.5\textwidth}
+\includegraphics[width=\textwidth]{confusion_spam.pdf}
+\end{column}
+\begin{column}{0.5\textwidth}
+\footnotesize
+$Pr(a) = \dfrac{1203+152}{1390} = 0.974$ \vspace{0.3cm}
+
+$Pr(e) = \dfrac{1207}{1390}\cdot\dfrac{1234}{1390} + \dfrac{183}{1390}\cdot\dfrac{156}{1390} = 0.786$ \vspace{0.3cm}
+
+$\kappa = \dfrac{0.974 - 0.786}{1 - 0.786} = 0.879$ \vspace{0.3cm}
+
+\normalsize Concordancia muy alta: los pronósticos van mucho más allá del azar.
+\end{column}
+\end{columns}
+\vspace{0.2cm}
+\tiny Fuente: Lantz (2015)
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Sensibilidad y especificidad}
+
+\begin{itemize}
+\item Capturan un \textit{trade-off}: clasificadores muy agresivos vs. muy conservadores
+\[
+sensibilidad = \frac{TP}{TP+FN}, \qquad especificidad = \frac{TN}{TN+FP}
+\]
+
+\item \textbf{Sensibilidad}: fracción de positivos que detectamos bien \vspace{0.2cm}
+
+\item \textbf{Especificidad}: fracción de negativos que detectamos bien \vspace{0.3cm}
+
+\item Un filtro de spam agresivo (alta sensibilidad) bloquea correos buenos (baja especificidad). El punto ideal depende del problema
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Curvas ROC}
+
+\begin{itemize}
+\item El \textit{trade-off} sensibilidad--especificidad se ve gráficamente con la \textbf{curva ROC} \vspace{0.2cm}
+\item Eje $y$: verdaderos positivos. Eje $x$: falsos positivos
+\end{itemize}
+
+\begin{figure}
+\includegraphics[scale=0.9]{ROC.pdf}
+\end{figure}
+\tiny Fuente: Lantz (2015)
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Área bajo la curva (AUC)}
+
+\begin{itemize}
+\item El \textbf{AUC} resume la curva ROC en un número \vspace{0.3cm}
+
+\item Clasificador inútil (diagonal de 45°): $AUC = 0.5$ \vspace{0.3cm}
+
+\item Clasificador perfecto: $AUC = 1$ \vspace{0.3cm}
+
+\item Los reales caen entre 0.5 y 1: cuanto mayor, mejor
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Estimar el desempeño futuro}
+
+\begin{itemize}
+\item Ya usamos el \textbf{método holdout}: dividir los datos en entrenamiento y prueba \vspace{0.3cm}
+
+\item Mejor aún: tres partes --- entrenamiento, \textbf{validación} y prueba \vspace{0.2cm}
+\begin{itemize}
+\item el modelo se afina con validación
+\item y se evalúa, una sola vez, con prueba
+\end{itemize}
+\end{itemize}
+
+\begin{figure}
+\includegraphics[scale=0.7]{holdout2.pdf}
+\end{figure}
+\tiny Fuente: Lantz (2015)
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Validación cruzada (cross-validation)}
+
+\begin{itemize}
+\item El holdout simple puede dar muestras poco representativas (sobre todo con pocos datos) \vspace{0.2cm}
+
+\item La \textbf{validación cruzada} \textit{k-fold} ($k=10$ típico): cada grupo se usa una vez como prueba, entrenando con los otros $k-1$; se promedian las $k$ medidas
+\end{itemize}
+
+\begin{figure}
+\includegraphics[width=0.78\textwidth]{kfold_cv.pdf}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Validación cruzada (cross-validation)}
+
+\begin{itemize}
+\item Es más robusta que un solo holdout: usa \textbf{todos} los datos para entrenar y para probar (en rondas distintas) \vspace{0.3cm}
+
+\item Da una estimación más estable del desempeño futuro \vspace{0.3cm}
+
+\item Es también la base para elegir \textbf{hiperparámetros} (como el $\lambda$ de Ridge/Lasso, o el $k$ de kNN) \vspace{0.3cm}
+
+\item Costo: hay que entrenar el modelo $k$ veces
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Buena práctica: no contaminar la prueba}
+
+\begin{itemize}
+\item La base de \textbf{prueba} debe usarse \textbf{una sola vez}, al final \vspace{0.3cm}
+
+\item Si elegimos el modelo mirando su desempeño en la prueba, ya la ``contaminamos'': la estimación será demasiado optimista \vspace{0.3cm}
+
+\item Por eso afinamos con \textbf{validación} (o validación cruzada) y reservamos la prueba para el veredicto final \vspace{0.3cm}
+
+\item Cuidado con la \textbf{fuga de información} (\textit{data leakage}): escalar o imputar usando \textit{toda} la base filtra información de la prueba al entrenamiento
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%   PARTE 2: MEJORANDO EL MODELO   %%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+\begin{center}
+{\Huge \textbf{Parte 2}}\\[0.5cm]
+{\large Mejorando el desempeño}
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Las variables importan más que el modelo}
+
+\begin{itemize}
+\item A menudo, mejores \textbf{variables} mejoran más la predicción que un modelo más sofisticado \vspace{0.2cm}
+
+\item \textit{Garbage in, garbage out}: con malas variables, ningún algoritmo salva el día \vspace{0.3cm}
+
+\item Tres ideas relacionadas:
+\begin{itemize}
+\item \textbf{Feature extraction}: derivar nuevas variables (de texto, imágenes, o reducción de dimensión)
+\item \textbf{Feature selection}: quedarse con un subconjunto de variables relevantes
+\item \textbf{Feature engineering}: transformar o combinar variables con conocimiento del dominio
+\end{itemize}
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Ingeniería de variables: transformaciones}
+
+\begin{itemize}
+\item Transformaciones típicas que ayudan al modelo:
+\begin{itemize}
+\item \textbf{log} de variables muy sesgadas (ingresos, gastos, precios)
+\item \textbf{binning}: discretizar una variable continua en categorías
+\item \textbf{dummies} para variables nominales; \textbf{interacciones} entre variables
+\item de una \textbf{fecha}: día de la semana, mes, festivo; de \textbf{texto}: conteos de palabras
+\end{itemize}
+\vspace{0.2cm}
+\item Ya lo hicimos en regresión: edad$^2$ y la interacción obesidad$\times$tabaquismo
+\end{itemize}
+
+\begin{figure}
+\includegraphics[width=0.64\textwidth]{feature_transform.pdf}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Extracción de variables}
+
+\begin{itemize}
+\item A veces no seleccionamos ni transformamos, sino que \textbf{construimos} variables nuevas y más compactas \vspace{0.3cm}
+
+\item \textbf{Reducción de dimensión} (PCA): resumir muchas variables correlacionadas en unas pocas ``componentes'' (lo veremos en la próxima sesión) \vspace{0.3cm}
+
+\item \textbf{Texto}: convertir documentos en variables (conteos de palabras, \textit{embeddings}) \vspace{0.3cm}
+
+\item \textbf{Señales o imágenes}: extraer características relevantes (frecuencias, bordes, formas)
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Escalamiento de variables}
+
+\begin{itemize}
+\item Muchos algoritmos son sensibles a la \textbf{escala} de las variables (kNN, SVM, regularización) \vspace{0.3cm}
+
+\item Dos formas de rescalar (ya vistas en kNN):
+\[
+\text{min-max: } \frac{x - x_{min}}{x_{max}-x_{min}} \in [0,1], \qquad \text{z-score: } \frac{x - \mu}{\sigma}
+\]
+
+\item Sin escalar, una variable con valores grandes domina solo por su unidad de medida \vspace{0.3cm}
+
+\item Los árboles, en cambio, son \textbf{invariantes} a la escala
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{¿Por qué seleccionar variables?}
+
+\begin{itemize}
+\item \textbf{Interpretabilidad}: un modelo con pocas variables es más fácil de explicar \vspace{0.3cm}
+
+\item \textbf{Menos sobreajuste}: variables irrelevantes agregan ruido \vspace{0.3cm}
+
+\item \textbf{Maldición de la dimensionalidad}: con muchas variables frente a pocas observaciones, el espacio se vuelve ``vacío'' y todo parece lejano \vspace{0.3cm}
+
+\item Lo vimos con Ridge/Lasso: cuando $p$ es grande frente a $n$, conviene reducir
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Métodos de selección de variables}
+
+\begin{itemize}
+\item \textbf{Filtro}: rankear cada variable por una medida estadística, \textit{antes} y \textit{aparte} del modelo
+\begin{itemize}
+\item correlación con el \textit{outcome}, ganancia de información, chi-cuadrado
+\end{itemize}
+\vspace{0.2cm}
+
+\item \textbf{Envoltura} (\textit{wrapper}): probar subconjuntos de variables y quedarse con el que mejor predice
+\begin{itemize}
+\item \textit{forward}/\textit{backward stepwise}, eliminación recursiva (RFE)
+\item más preciso, pero costoso (entrena muchos modelos)
+\end{itemize}
+\vspace{0.2cm}
+
+\item \textbf{Embebido}: la selección ocurre \textit{dentro} del modelo (Lasso, árboles)
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Importancia de variables}
+
+\begin{itemize}
+\item ¿Cuánto aporta cada variable? Dos ideas: \vspace{0.2cm}
+\begin{itemize}
+\item \textbf{En árboles/RF}: la reducción promedio de impureza (Gini o entropía) al usar cada variable
+\item \textbf{Permutación}: barajar una variable; si la precisión cae mucho, era importante
+\end{itemize}
+\end{itemize}
+
+\begin{figure}
+\includegraphics[width=0.72\textwidth]{varimportance.pdf}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Desbalance de clase: el problema}
+
+\begin{columns}
+\begin{column}{0.52\textwidth}
+\begin{itemize}
+\item Cuando la clase de interés es \textbf{rara} (fraude, una enfermedad, el cliente que compra) \vspace{0.2cm}
+\item La precisión total \textbf{engaña}: predecir siempre la clase mayoritaria ya da precisión altísima \vspace{0.2cm}
+\item El modelo ``ignora'' la minoría, que suele ser la que importa
+\end{itemize}
+\end{column}
+\begin{column}{0.48\textwidth}
+\includegraphics[width=\textwidth]{imbalance_scatter.pdf}
+\end{column}
+\end{columns}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Cuando la precisión engaña: mejores métricas}
+
+\begin{itemize}
+\item Con desbalance, en vez de la precisión total miramos: \vspace{0.2cm}
+\[
+precision = \frac{TP}{TP+FP}, \qquad recall = sensibilidad = \frac{TP}{TP+FN}
+\]
+\[
+F_1 = 2\cdot\frac{precision \cdot recall}{precision + recall}
+\]
+
+\item \textbf{Precision}: de lo que predigo positivo, ¿cuánto acierto? \vspace{0.1cm}
+\item \textbf{Recall}: de los positivos reales, ¿cuántos detecto? \vspace{0.1cm}
+\item \textbf{F1} combina ambos (media armónica). También: kappa y AUC
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{ROC vs. curva precision-recall}
+
+\begin{itemize}
+\item Con desbalance fuerte, la curva ROC puede verse ``demasiado optimista'' \vspace{0.3cm}
+
+\item Esto porque la especificidad se mantiene alta cuando los negativos son muchísimos \vspace{0.3cm}
+
+\item La \textbf{curva precision-recall} se concentra en la clase rara y suele ser más informativa en esos casos \vspace{0.3cm}
+
+\item Regla práctica: con desbalance fuerte, reporta \textbf{recall, F1 y la curva precision-recall}, no solo el AUC-ROC
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Desbalance: soluciones por re-muestreo}
+
+\begin{columns}
+\begin{column}{0.5\textwidth}
+\begin{itemize}
+\item \textbf{Submuestreo}: quitar casos de la mayoría \vspace{0.2cm}
+\item \textbf{Sobremuestreo}: replicar casos de la minoría \vspace{0.2cm}
+\item \textbf{Datos sintéticos} (SMOTE, ROSE): generar minoría \textit{nueva}
+\end{itemize}
+\end{column}
+\begin{column}{0.5\textwidth}
+\includegraphics[width=\textwidth]{resampling.pdf}
+\end{column}
+\end{columns}
+\vspace{0.2cm}
+Se balancea \textbf{solo el entrenamiento}; la prueba se deja intacta.
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{SMOTE: datos sintéticos}
+
+\begin{columns}
+\begin{column}{0.5\textwidth}
+\begin{itemize}
+\footnotesize
+\item En vez de copiar, SMOTE \textbf{interpola} entre un caso minoritario y un vecino cercano:
+\[
+x_{nuevo} = x_i + \lambda\,(x_{vecino} - x_i)
+\]
+con $\lambda \sim U(0,1)$ \vspace{0.2cm}
+\item Crea variedad en la minoría, no solo duplicados
+\end{itemize}
+\end{column}
+\begin{column}{0.5\textwidth}
+\includegraphics[width=\textwidth]{smote_illustration.pdf}
+\end{column}
+\end{columns}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Desbalance: costos y umbral}
+
+\begin{itemize}
+\item Otra vía sin tocar los datos: \vspace{0.3cm}
+
+\item \textbf{Costos asimétricos}: decirle al modelo que un falso negativo cuesta más que un falso positivo (o al revés) \vspace{0.3cm}
+
+\item \textbf{Mover el umbral}: en vez de clasificar como positivo si $P > 0.5$, bajar el umbral para detectar más positivos \vspace{0.3cm}
+
+\item Todo es el mismo \textit{trade-off}: más sensibilidad a cambio de más falsos positivos
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Sobreajuste (overfitting)}
+
+\begin{columns}
+\begin{column}{0.5\textwidth}
+\begin{itemize}
+\item Un modelo \textbf{sobreajustado} memoriza el ruido del entrenamiento y falla con datos nuevos \vspace{0.2cm}
+\item Señal: error \textbf{bajo en entrenamiento}, \textbf{alto en prueba} \vspace{0.2cm}
+\item Lo vimos con el árbol de crédito (85\% vs. 70\%)
+\end{itemize}
+\end{column}
+\begin{column}{0.5\textwidth}
+\includegraphics[width=\textwidth]{overfitting_curve.pdf}
+\end{column}
+\end{columns}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Descomposición sesgo-varianza}
+
+\begin{columns}
+\begin{column}{0.5\textwidth}
+\footnotesize
+El error esperado de predicción se descompone en:
+\[
+\underbrace{Sesgo^2}_{\text{modelo muy simple}} + \underbrace{Varianza}_{\text{modelo muy complejo}} + \underbrace{\sigma^2}_{\text{irreducible}}
+\]
+\normalsize
+\begin{itemize}
+\item Más complejidad: menos sesgo, más varianza \vspace{0.1cm}
+\item Hay un punto óptimo que minimiza el error total
+\end{itemize}
+\end{column}
+\begin{column}{0.5\textwidth}
+\includegraphics[width=\textwidth]{bias_variance.pdf}
+\end{column}
+\end{columns}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{¿Cómo combatir el sobreajuste?}
+
+\begin{itemize}
+\item Conseguir \textbf{más datos} (cuando se puede) \vspace{0.2cm}
+\item \textbf{Validación cruzada} para elegir la complejidad adecuada \vspace{0.2cm}
+\item \textbf{Regularización} (Ridge, Lasso): penalizar la complejidad \vspace{0.2cm}
+\item \textbf{Poda} de árboles; limitar su profundidad \vspace{0.2cm}
+\item \textbf{Ensamblaje}: combinar muchos modelos
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Ensamblaje: combinar modelos}
+
+\begin{itemize}
+\item \textbf{Ensamblar} = combinar muchos modelos para predecir mejor que uno solo
+\end{itemize}
+
+\begin{figure}
+\includegraphics[width=0.92\textwidth]{bagging_vs_boosting.pdf}
+\end{figure}
+
+\begin{itemize}
+\item \textbf{Bagging}: árboles \textbf{en paralelo} (reduce varianza). \textbf{Boosting}: árboles \textbf{en secuencia} (reduce sesgo)
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Bagging (repaso) y Random Forests}
+
+\begin{itemize}
+\item \textbf{Bagging}: entrenar árboles sobre muestras \textit{bootstrap} y \textbf{promediar/votar} \vspace{0.3cm}
+
+\item Reduce la \textbf{varianza} de modelos inestables (como los árboles) \vspace{0.3cm}
+
+\item \textbf{Random Forests}: además decorrelaciona los árboles usando un subconjunto aleatorio de variables en cada nodo (lo vimos en S2) \vspace{0.3cm}
+
+\item Bagging y RF se entrenan \textbf{en paralelo}: el orden no importa
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Boosting}
+
+\begin{itemize}
+\item Entrena modelos ``débiles'' (árboles pequeños) \textbf{en secuencia} \vspace{0.3cm}
+
+\item Cada modelo da \textbf{más peso} a los casos que el anterior clasificó \textbf{mal} \vspace{0.3cm}
+
+\item La predicción final es una combinación ponderada de todos \vspace{0.3cm}
+
+\item Ya lo usamos sin nombrarlo: el parámetro \texttt{trials} de C5.0 hace \textit{boosting}
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{AdaBoost, gradient boosting y XGBoost}
+
+\begin{itemize}
+\item \textbf{AdaBoost}: sube el peso de los casos mal clasificados en cada ronda \vspace{0.3cm}
+
+\item \textbf{Gradient boosting}: cada nuevo árbol ajusta los \textbf{errores (residuos)} del conjunto anterior \vspace{0.3cm}
+
+\item \textbf{XGBoost} (y LightGBM): implementaciones muy eficientes y regularizadas \vspace{0.3cm}
+
+\item Dominan muchas competencias de predicción con datos tabulares
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{¿Bagging o boosting?}
+
+\begin{itemize}
+\item \textbf{Bagging / RF}: atacan la \textbf{varianza}. Buenos con modelos inestables; difíciles de sobreajustar; fáciles de paralelizar \vspace{0.3cm}
+
+\item \textbf{Boosting}: ataca el \textbf{sesgo}. Suele dar mayor precisión, pero es más sensible al ruido y a los hiperparámetros (puede sobreajustar) \vspace{0.3cm}
+
+\item \textbf{Al taller}: tres talleres --- evaluación (ROC, CV), selección de variables, y desbalance + boosting
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Resumen de la sesión}
+
+\begin{itemize}
+\item La \textbf{precisión total} no basta: con desbalance, mira kappa, sensibilidad/especificidad, F1 y AUC \vspace{0.2cm}
+
+\item Estima el desempeño \textbf{futuro} con holdout y \textbf{validación cruzada} (sin contaminar la prueba) \vspace{0.2cm}
+
+\item Mejora el modelo con mejores \textbf{variables} (ingeniería, extracción, selección, importancia) \vspace{0.2cm}
+
+\item Maneja el \textbf{desbalance} (re-muestreo, SMOTE/ROSE, costos) \vspace{0.2cm}
+
+\item Controla el \textbf{sobreajuste} (sesgo-varianza, CV, regularización) con \textbf{ensamblaje} y \textbf{boosting}
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{document}

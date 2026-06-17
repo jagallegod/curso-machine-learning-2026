@@ -1,0 +1,4 @@
+"nombre_sujeto","numero_goles","posicion","juega_francia","gravedad_lesion"
+"James",109,"volante",FALSE,"severa"
+"Radamel",249,"delantero",TRUE,"moderada"
+"David",0,"arquero",FALSE,"leve"

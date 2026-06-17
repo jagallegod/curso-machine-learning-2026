@@ -1,0 +1,230 @@
+---
+title: "Ridge y Lasso en R"
+output:
+ html_notebook: default
+---
+
+# 1. Introducción
+
+\
+
+- Ridge y Lasso son extensiones del modelo de regresión lineal que atacan los problemas de la alta dimensionalidad (muchas variables frente al número de observaciones): alta varianza en las predicciones y dificultad de interpretación.
+
+- Ambos introducen una **penalidad** sobre el tamaño de los coeficientes, halándolos hacia 0.
+
+- Bajo **Ridge** los coeficientes tienden a 0 a medida que pesa más la penalidad, pero nunca son exactamente 0.
+
+- Bajo **Lasso** algunos coeficientes sí se vuelven exactamente 0.
+
+- La clave es la elección del parámetro $\lambda$, que mide el peso de la penalidad.
+
+\
+
+# 2. Datos
+
+\
+
+- Trabajaremos con `Hitters.csv`: información sobre el salario de un conjunto de beisbolistas en EE.UU. Queremos predecir el salario en función de sus características.
+
+- Leemos la base (con `stringsAsFactors = TRUE` para las variables categóricas como `League` o `Division`):
+
+\
+
+```{r}
+hitters <- read.csv("data/Hitters.csv", stringsAsFactors = TRUE)
+str(hitters)
+```
+
+\
+
+- La primera columna son los nombres; no nos interesa, la eliminamos:
+
+\
+
+```{r}
+hitters <- hitters[, -1]
+```
+
+\
+
+- Queremos predecir el salario. Nótese que hay valores ausentes (*missing*) en `Salary`:
+
+\
+
+```{r}
+sum(is.na(hitters$Salary))
+```
+
+\
+
+- Para Ridge y Lasso debemos eliminar esas observaciones (como en el enfoque OLS tradicional):
+
+\
+
+```{r}
+hitters <- na.omit(hitters)
+sum(is.na(hitters))
+```
+
+\
+
+- Quedamos con 263 observaciones. Para correr Ridge y Lasso usamos el paquete `glmnet`. Si no lo tienes instalado:
+
+\
+
+```{r, eval=FALSE}
+install.packages("glmnet")
+```
+
+\
+
+```{r}
+library(glmnet)
+```
+
+\
+
+- La sintaxis de `glmnet` es distinta: hay que construir la matriz de atributos con `model.matrix()` (que además crea las *dummies* de las categóricas) y el vector de *outcomes*:
+
+\
+
+```{r}
+x <- model.matrix(Salary ~ ., hitters)[, -1]
+y <- hitters$Salary
+```
+
+\
+
+# 3. Regresión Ridge
+
+\
+
+- En `glmnet()`, el parámetro `alpha` define el modelo: `alpha = 0` es Ridge y `alpha = 1` es Lasso.
+
+- También definimos una grilla de valores de $\lambda$, desde valores enormes (modelo casi sin predictores) hasta cercanos a 0 (OLS). Creamos 100 valores:
+
+\
+
+```{r}
+grid <- 10^seq(10, -2, length = 100)
+```
+
+\
+
+- Estimamos los 100 modelos Ridge (uno por cada $\lambda$):
+
+\
+
+```{r}
+hitters_ridge <- glmnet(x, y, alpha = 0, lambda = grid)
+```
+
+\
+
+- Cada $\lambda$ genera coeficientes distintos: a mayor $\lambda$, más pequeños. Comparemos el $\lambda$ en la posición 50 con el de la 60 (recuerda que, por cómo armamos la grilla, índices mayores corresponden a $\lambda$ menores):
+
+\
+
+```{r}
+hitters_ridge$lambda[50]
+hitters_ridge$lambda[60]
+```
+
+\
+
+```{r}
+coef(hitters_ridge)[, 50]
+```
+
+\
+
+- Para entrenar y probar, dividimos la base por la mitad (entrenamiento / prueba), fijando la semilla:
+
+\
+
+```{r}
+set.seed(123)
+train <- sample(1:nrow(x), nrow(x) / 2)
+test <- (-train)
+y_test <- y[test]
+```
+
+\
+
+- Reestimamos Ridge solo con el entrenamiento y graficamos cómo decrecen los coeficientes al crecer $\lambda$:
+
+\
+
+```{r}
+hitters_ridge <- glmnet(x[train, ], y[train], alpha = 0, lambda = grid)
+plot(hitters_ridge, xvar = "lambda")
+```
+
+\
+
+- ¿Cuál es el $\lambda$ óptimo? Lo elegimos por **validación cruzada** con `cv.glmnet()`:
+
+\
+
+```{r}
+set.seed(123)
+cv_ridge <- cv.glmnet(x[train, ], y[train], alpha = 0)
+bestlam <- cv_ridge$lambda.min
+bestlam
+```
+
+\
+
+- Ese es el $\lambda$ que minimiza el error de validación cruzada. El modelo asociado es:
+
+\
+
+```{r}
+predict(cv_ridge, s = bestlam, type = "coefficients")[1:20, ]
+```
+
+\
+
+- Con ese modelo se predice sobre la base de prueba y se calcula el MSE.
+
+\
+
+# 4. Lasso
+
+\
+
+- El proceso es equivalente, pero con `alpha = 1`. Estimamos sobre el entrenamiento y graficamos:
+
+\
+
+```{r}
+hitters_lasso <- glmnet(x[train, ], y[train], alpha = 1, lambda = grid)
+plot(hitters_lasso, xvar = "lambda")
+```
+
+\
+
+- A medida que $\lambda$ crece, los coeficientes caen y algunos se vuelven exactamente 0. Busquemos el $\lambda$ óptimo por validación cruzada:
+
+\
+
+```{r}
+set.seed(123)
+cv_lasso <- cv.glmnet(x[train, ], y[train], alpha = 1)
+bestlam <- cv_lasso$lambda.min
+bestlam
+```
+
+\
+
+- Y veamos el modelo asociado:
+
+\
+
+```{r}
+predict(cv_lasso, s = bestlam, type = "coefficients")[1:20, ]
+```
+
+\
+
+- A diferencia de Ridge, aquí algunos coeficientes **sí** son exactamente 0: Lasso hizo selección de variables. Este modelo suele lograr un MSE menor que el OLS convencional, y es más fácil de interpretar.

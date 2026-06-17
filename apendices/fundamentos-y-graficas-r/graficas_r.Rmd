@@ -1,0 +1,731 @@
+---
+title: "Programación Básica y Gráficas en R"
+output: 
+  html_notebook: default
+---
+
+
+# 1.Introducción
+
+\
+
+
+- En comparación con otros paquetes como Stata, R tiene un costo de entrada relativamente mayor.
+
+- Sin embargo, este costo se cubre rápidamente debido a la versatilidad del programa para diversos procesos.
+
+- Programación y  gráficas son dos campos en los que R se desempeña relativamente bien.
+
+- Estos dos campos son universos en sí mismos.
+
+- No alcanzamos (ni es el objetivo del curso) cubrir todos los detalles asociados a estos temas.
+
+- Pero introduciremos algunos aspectos básicos de cada campo.
+
+- En primer lugar, veremos en esta lección los fundamentos de las funciones y los loops en R, que son la piedra angular en programación.
+
+- Sin que esto implique que aprendamos a programar. Apenas meteremos el dedo gordo del pie en un oceáno de profundidad.
+
+- Algo parecido en cuanto a gráficas.
+
+- Veremos los fundamentos de `ggplot2`, acaso el paquete de R más versatil para hacer gráficas.
+
+- Lectores interesados en aprender a programar (en forma) pueden remitirse al libro de Matloff (2011), "The Art of R Programming".
+
+- Para más en gráficas y `ggplot2` Whickham (2009), "ggplot2. Elegant Graphics for Data Analysis" es una opción interesante.
+
+\
+
+
+# 2. Funciones
+
+\
+
+
+- Como en la mayoría de lenguajes de programación, el corazón de programar son las funciones.
+
+- Una función es un grupo de instrucciones que toma insumos, los usa para computar otros valores y devuelve un resultado.
+
+- La típica función tiene la siguiente estructura:
+
+\
+
+
+
+`function.name <- function(arguments)`
+
+`{`
+
+`computations on the arguments`
+
+`some other code`
+
+`}`
+
+
+\
+
+
+
+- Así, las funciones suelen tener un nombre.
+
+- Los argumentos usados como insumos.
+
+- Un cuerpo, que es el código dentro de los corchetes {}. Es donde llevamos a cabo los cálculos.
+
+- Y uno o más valores retornados.
+
+- Empecemos con una función simple que nos devuelva el cuadrado de cualquier número:
+
+\
+
+
+```{r}
+funcion_cuadrado <- function(n)
+{
+  u=n*n
+  return(u)
+}
+```
+
+
+```{r}
+funcion_cuadrado(5)
+```
+
+\
+
+
+- Listo: hemos programado nuestra primera función.
+
+- Naturalmente, no teníamos que definirla porque R ya le tiene incorporada: `n^2`
+
+- Probemos con una función más compleja.
+
+- Una que nos permita contar el número de elementos impares que tiene un vector.
+
+- Para ello, primero conozcamos el operador módulo `%%`.
+
+- Este operador devuelve el residuo de la división de dos números. Por ejemplo:
+
+\
+
+```{r}
+38 %% 7
+```
+
+\
+
+
+- Porque 7 cabe 5 veces en 38, y sobran 3. O por ejemplo,
+
+```{r}
+100 %% 5
+```
+
+- Porque 100 es un múltiplo de 5.
+
+- Entendiendo este operador podemos programar la función que cuente el número de impares en un vector.
+
+- Porque un impar es un número que al dividirse por 2 deja un residuo de 1:
+
+\
+
+
+
+```{r}
+55 %% 2
+```
+
+\
+
+
+- Así, nuestra función es:
+
+\
+
+
+```{r}
+numeroimpares <- function(x)
+{
+  k <- 0
+  for (n in x) 
+  {
+    if (n %% 2 ==1) k <- k+1
+  }
+  return(k)
+}
+```
+
+\
+
+
+- Vamos paso a paso:
+
+- Primero, le dimos un nombre a la función.
+
+- Establecimos que el insumo de la función es un vector llamado `x`.
+
+- Luego abrimos el cuerpo del código.
+
+- Este empieza estableciendo un escalar `k` en 0.
+
+- Luego le pedimos que para cada elemento `n` del vector `x`, en orden desde el primero hasta el último, se use el operador módulo.
+
+- Si el resultado es 1, se le agrega una unidad al valor de `k` que venimos arrastrando.
+
+- Probemos la función con el vector `c(5, 6, 7, 8)`. En este caso, el vector tiene 2 impares.
+
+\
+
+
+```{r}
+a <- c(5, 6, 7, 8)
+numeroimpares(a)
+```
+
+\
+
+
+- Funciona bien. También podemos incluir directamente el vector:
+
+\
+
+
+```{r}
+numeroimpares(c(1, 5, 7, 9, 11))
+```
+
+\
+
+
+# Ejercicio
+
+\
+
+
+ a) Cree una función que para cualquier escalar, devuelva el cuadrado del logaritmo natural de dicho escalar multiplicado por 10. Pruebe que la función sirve con el escalar 1 y con algún otro escalar.
+
+ b) Cree una función que cuente, para cualquier matriz, el número de elementos que son múltiplos de 3. Pruebe su función con una matriz 3x3 que tenga 4 múltiplos de 3.
+
+\
+
+
+# 3. Iteraciones y loops
+\
+
+
+
+- En la definición de funciones, los loops son un elemento esencial.
+
+- Un loop es una forma de repetir un secuencia de instrucciones bajo ciertas condiciones.
+
+- Permite automatizar partes de un código que necesitan repetición.
+
+- En la función anterior usamos un loop: `for (n in x) {`
+
+- Le pedimos a R que repitiera una acción para cada elemento en x.
+
+- Significa que hace una iteración del loop para cada componente del vector `x`.
+
+- En la primera iteración, `n=x[1]`. En la segunda, `n=x[2]`. Y así sucesivamente.
+
+- Veamos otro ejemplo:
+
+\
+
+
+```{r}
+x <- c(5, 12, 13)
+for (n in x)
+  print(n^2)
+```
+
+\
+
+
+- Acá le pedimos que a cada elemento del vector le saque el cuadrado.
+
+- Otras declaraciones interesantes, con las que podemos generar loops, son `while` y  `repeat`.
+
+- Por ejemplo, consideremos el siguiente loop:
+
+\
+
+
+```{r}
+i <- 1
+while (i<=10) i <- i+4
+i
+```
+
+\
+
+
+- Primero establecimos `i` igual 1.
+
+- Y dijimos que siempre que i sea menor o igual a 10, se convierta en `i+4`.
+
+- El ciclo llega hasta `i=9`, que se convierte en 13 y se detiene.
+
+- Esto lo podemos lograr con otra declaración, incluyendo el operador `break`.
+
+\
+
+
+```{r}
+i <- 1
+repeat 
+  {
+  i <- i+4
+  if (i>10) break  
+  }
+i
+```
+
+\
+
+
+
+
+# 4. Gráficas
+
+\
+
+
+
+- La visualización es clave en data science.
+
+- Una imagen dice más que mil palabras.
+
+- De hecho, una de las fortalezas de R es que permite hacer gráficas elegantes.
+
+- Usaremos el paquete `ggplot2`, que es tal vez el más poderso y generalizado.
+
+- Lo primero que debemos entender es la gramática de una gráfica.
+
+- Los bloques de un gráfica son los siguientes:
+
+    - Datos
+    - Mapeo estético
+    - Objeto geométrico
+    - Transformaciones estadísticas
+    - Escalas
+    - Sistema de coordenadas
+    - Ajustes de posición
+    - Facetado
+ 
+\
+
+
+## 4.1 Gráficas básicas vs. `ggplot2` 
+
+\
+
+
+- R tiene sus propias funciones incorporadas para hacer gráficas.
+
+- Pero el paquete `ggplot2` es mucho más poderoso.
+
+- Ilustremos esto con un ejemplo.
+
+- Trabajaremos con la base `landdata-states.csv` que está en la carpeta de esta semana.
+
+- Esta es una base sobre precios de la vivienda en USA.
+
+\
+
+
+```{r}
+housing <- read.csv("data/landdata-states.csv") 
+```
+
+\
+
+
+- Inspeccionemos la base:
+
+\
+
+
+```{r}
+str(housing)
+```
+
+\
+
+
+- Otra forma de ver los datos es por medio del comando head:
+
+\
+
+
+```{r}
+head(housing) 
+```
+
+
+\
+
+
+- Tenemos variables interesantes como el estado, el valor, la región, la antiguedad, entre otras.
+
+- Las gráficas nos ayudan a entender estos datos.
+
+- Comparemos gráficas tradicionales de R con las de `ggplot2`
+
+- Empezemos con un histograma del precio de las viviendas. Con funciones básicas de R tenemos:
+
+\
+
+```{r}
+hist(housing$Home.Value)
+```
+
+\
+
+
+- Ahora hagamos el histograma en `ggplot2`:
+
+\
+
+
+```{r}
+# install.packages("ggplot2")
+library(ggplot2)
+ggplot(housing, aes(x = Home.Value))+geom_histogram()
+```
+
+
+\
+
+
+- Para gráficas sencillas, como este histograma, la sintaxis de `ggplot2` es más compleja.
+
+- Pero para gráficas complicadas, es más fácil con `ggplot2`.
+
+- Veamos esto con una gráfica de la serie de tiempo del valor de las casas.
+
+- En la versión simple:
+
+\
+
+
+```{r}
+plot(Home.Value ~ Date, data=subset(housing, State=="MA"))
+points(Home.Value ~ Date, col="red", data=subset(housing, State=="TX"))
+legend(1975, 400000,
+       c("MA", "TX"), title="State",
+       col=c("black", "red"),
+       pch=c(1, 1))
+```
+
+\
+
+
+- La primera línea grafica la serie para MA, la segunda para TX, y la tercera es la leyenda.
+
+- Un tanto complejo el proceso.
+
+- Veamos como sería en `ggplot2`.
+
+\
+
+
+```{r}
+ggplot(subset(housing, State %in% c("MA", "TX")), aes(x=Date, y=Home.Value, color=State))+geom_point()
+```
+
+\
+
+
+- En este caso, claramente, es mucho más fácil hacer la gráfica en ggplot.
+
+- Entendamos este lenguaje.
+
+\
+
+
+## 4.2 Objetos geométricos y estética
+
+\
+
+
+### Mapeo estético
+
+\
+
+
+- En `ggplot2` por estético entendemos lo que podemos ver.
+
+- Por ejemplo, posición, color, relleno, forma, tipo de línea, tamaño.
+
+- Cada objeto geométrico acepta solo un subconjunto de opciones estéticas.
+
+- El mapeo estético se establece con la función `aes()`.
+
+\
+
+
+### Objetos geométricos
+
+\
+
+
+- Los objetos geométricos son las marcas que ponemos en una gráfica. Por ejemplo:
+
+     - Puntos (`geom_point`)
+     - Líneas (`geom_line`)
+     - Boxplots (`geom_boxplot`)
+
+- Una gráfica debe tener al menos un `geom`. Puede tener más de uno.
+
+- Con el operador `+` se pueden añadir más `geom`.
+
+- Para un listado de todos los objetos geométricos disponibles usar:
+
+\
+
+
+```{r}
+help.search("geom_", package="ggplot2")
+```
+
+\
+
+
+- Veamos algunos ejemplos
+
+\
+
+
+### Puntos (Scatterplot)
+
+\
+
+
+- Con la funcion `aes` y los objetos geométricos podemos hacer gráficas en `ggplot2`.
+
+- Como mínimo necesitamos mapear $x$ y $y$. Luego hay algunas opciones:
+
+
+\
+
+
+```{r}
+ggplot(housing, aes(y=Land.Value, x=Home.Value, col="red"))+geom_point()
+```
+
+\
+
+
+ 
+- Tenemos demasiadas observaciones como para ver algo claro.
+
+- Acotemos el análisis únicamente al primer trimestre de 2002
+
+\
+
+
+```{r}
+housing2002Q1 <- subset(housing, Date==2002.25)
+```
+ 
+ 
+\
+
+
+ - Y construyamos el scatterplot solo para este periodo:
+ 
+ 
+\
+
+
+```{r}
+ggplot(housing2002Q1, aes(y=Land.Value, x=Home.Value, col="red"))+geom_point()
+```
+
+\
+
+
+- Mucho más claro.
+
+- Podemos hacer transformaciones a variables y graficarlas:
+
+\
+
+
+```{r}
+ggplot(housing2002Q1, aes(y=Land.Value, x=log(Home.Value), col="red"))+geom_point()
+```
+
+\
+
+
+- Nótese la escala en el eje x.
+
+\
+
+
+### Líneas (línea de predicción)
+
+\
+
+
+- Podemos tener más de un objeto geométrico en una misma gráfica.
+
+- Por ejemplo, podemos graficar la recta de regresión a la gráfica que ya tenemos.
+
+- Primero, corramos la regresión de `Land.Value` contra `Home.Value` y pronostiquemos:
+
+
+\
+
+
+```{r}
+housing2002Q1$pred.LV <- predict(lm(Land.Value ~ log(Home.Value), data = housing2002Q1))
+```
+
+\
+
+
+- Definamos el plano:
+
+\
+
+
+```{r}
+p1 <- ggplot(housing2002Q1, aes(x=log(Home.Value), y=Land.Value))
+```
+
+
+\
+
+
+- Grafiquemos en dicho plano las observaciones y la recta de regresión
+
+\
+
+
+```{r}
+p1 + geom_point()+geom_line(aes(y=pred.LV))
+```
+
+\
+
+
+- Hay otro tipo de ajustes más sofisticados (no-paramétricos):
+
+\
+
+
+```{r}
+p1 + geom_point(aes(color=Land.Value))+geom_smooth()
+```
+
+\
+
+
+### Texto (Label Points)
+
+\
+
+
+- Cada `geom` permite algunos mapeos particulares.
+
+- Por ejemplo, `geom_text` acepta `labels`.
+
+\
+
+
+```{r}
+p1+geom_text(aes(label=State))
+```
+
+\
+
+
+
+- El tamaño de los labels no nos ayuda mucho en este caso.
+
+\
+
+
+```{r}
+p1+geom_text(aes(label=State), size=1.5)
+```
+\
+
+
+
+### Barras
+
+\
+
+
+- Es fácil hacer gráficas de barras:
+
+\
+
+
+```{r}
+ggplot(housing, aes(factor(region)))+geom_bar()
+```
+
+\
+
+
+- Le podemos poner algo de color:
+
+\
+
+
+```{r}
+ggplot(housing, aes(factor(region)))+geom_bar(fill="darkgreen")
+```
+
+\
+
+
+- Hay otra función, `qplot`, que es útil para este tipo de gráficas. 
+
+- La sintaxis es distinta:
+
+\
+
+
+```{r}
+qplot(region, data=housing, geom="bar")
+```
+
+\
+
+
+- Esta función es más intuitiva para ciertas variantes.
+
+- Por ejemplo, si queremos ver la media de `Home.Value` por región.
+
+\
+
+
+```{r}
+qplot(region, data=housing, geom="bar", weight=Home.Value, ylab="Home.Value")
+```
+
+\
+
+
+- Y le podemos poner un poco de color:
+
+\
+
+
+```{r}
+qplot(region, data=housing, geom="bar", weight=Home.Value, ylab="Home.Value", fill=region)
+```
+
+\
+
+
+
+

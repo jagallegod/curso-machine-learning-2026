@@ -1,0 +1,217 @@
+---
+title: "Evaluación del desempeño de modelos en R"
+output:
+ html_notebook: default
+---
+
+# 1. Introducción
+
+\
+
+- El desempeño de un modelo puede evaluarse de varias formas. La más obvia es la **precisión**, pero puede ser engañosa.
+
+- Veremos en detalle la matriz de confusión, el estadístico kappa, la sensibilidad y la especificidad, la curva ROC y el área AUC, y la validación cruzada.
+
+- Tanto para medir un modelo en términos absolutos como para compararlo con otros.
+
+\
+
+# 2. Datos
+
+\
+
+- Volvemos a los datos del banco portugués: queremos predecir si una persona adquiere el depósito a plazo (`y`) que se le ofrece por teléfono.
+
+- Para que el taller corra ágil en clase, usamos una **muestra de 5.000 clientes** de la base original (ver nota al final). Leemos con `stringsAsFactors = TRUE`:
+
+\
+
+```{r}
+bank <- read.csv("data/bank.csv", stringsAsFactors = TRUE)
+```
+
+\
+
+- Dividamos en entrenamiento (90%) y prueba (10%), fijando la semilla:
+
+\
+
+```{r}
+set.seed(123)
+train_sample <- sample(nrow(bank), 0.9 * nrow(bank))
+bank_train <- bank[train_sample, ]
+bank_test  <- bank[-train_sample, ]
+```
+
+\
+
+- Estimemos un árbol de decisión (C5.0) y pronostiquemos sobre la base de prueba:
+
+\
+
+```{r}
+library(C50)
+bank_tree <- C5.0(bank_train[-20], bank_train$y)
+bank_pred_tree <- predict(bank_tree, bank_test)
+```
+
+\
+
+# 3. Matriz de confusión y precisión total
+
+\
+
+- Construimos la matriz de confusión con `CrossTable()` del paquete `gmodels`:
+
+\
+
+```{r}
+library(gmodels)
+CrossTable(bank_test$y, bank_pred_tree, prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
+           dnn = c("Real", "Pronóstico"))
+```
+
+\
+
+- La **precisión total** es alta (alrededor del 90%), pero la proporción de falsos negativos (clientes que sí compran y no detectamos) es alta. La precisión sola no cuenta toda la historia.
+
+\
+
+# 4. Otras medidas de desempeño
+
+\
+
+- Con el paquete `caret` accedemos a un conjunto rico de medidas. Si no lo tienes instalado:
+
+\
+
+```{r, eval=FALSE}
+install.packages("caret")
+```
+
+\
+
+- La función `confusionMatrix()` calcula la matriz y muchas medidas. Es importante indicar cuál clase es el "positivo" (aquí, `"yes"`: que sí compra). El primer argumento son las predicciones y el segundo la realidad:
+
+\
+
+```{r}
+library(caret)
+confusionMatrix(data = bank_pred_tree, reference = bank_test$y, positive = "yes")
+```
+
+\
+
+- Además de la precisión (con su intervalo de confianza), la tabla reporta:
+    - el **estadístico kappa** (suele ser solo moderado aquí, por el desbalance de clase);
+    - la **sensibilidad** (baja: el modelo tiene dificultades con los positivos) y la **especificidad** (alta).
+
+\
+
+# 5. Análisis gráfico: curva ROC y AUC
+
+\
+
+- La curva ROC muestra el *trade-off* entre sensibilidad y especificidad. La graficamos con `ROCR`:
+
+\
+
+```{r, eval=FALSE}
+install.packages("ROCR")
+```
+
+\
+
+```{r}
+library(ROCR)
+```
+
+\
+
+- Necesitamos las **probabilidades** que el modelo asigna a cada caso de prueba:
+
+\
+
+```{r}
+bank_pred_prob <- predict(bank_tree, bank_test, type = "prob")
+```
+
+\
+
+- Se genera una matriz con una columna por clase. Nos quedamos con la probabilidad de la clase de interés (`yes`):
+
+\
+
+```{r}
+prob_yes <- bank_pred_prob[, "yes"]
+```
+
+\
+
+- Creamos el objeto de predicción (probabilidades + clase real) y calculamos la curva (tasa de verdaderos positivos vs. falsos positivos):
+
+\
+
+```{r}
+pred <- prediction(predictions = prob_yes, labels = bank_test$y)
+perf <- performance(pred, measure = "tpr", x.measure = "fpr")
+plot(perf, main = "Curva ROC - modelo del banco", col = "blue", lwd = 3)
+abline(a = 0, b = 1, lty = 2)
+```
+
+\
+
+- Y el **AUC** (área bajo la curva):
+
+\
+
+```{r}
+perf.auc <- performance(pred, measure = "auc")
+unlist(perf.auc@y.values)
+```
+
+\
+
+- Un AUC bastante por encima de 0.5: el modelo discrimina razonablemente, aunque haya que mirar la sensibilidad.
+
+\
+
+# 6. Validación cruzada
+
+\
+
+- Por último, estimamos el desempeño futuro con **validación cruzada** *k-fold*. La idea: partir los datos en $k$ grupos; cada uno se usa una vez como prueba, entrenando con los $k-1$ restantes, y se promedian las medidas.
+
+- Con `caret` es directo. Usamos $k=5$ para ahorrar tiempo, y acotamos la grilla de parámetros del C5.0 (probamos sin y con *boosting*, `trials` 1 y 10) para que corra rápido:
+
+\
+
+```{r}
+set.seed(123)
+ctrl <- trainControl(method = "cv", number = 5)
+grid <- expand.grid(model = "tree", trials = c(1, 10), winnow = FALSE)
+bank_treecv <- train(y ~ ., data = bank_train, method = "C5.0",
+                     metric = "Kappa", trControl = ctrl, tuneGrid = grid)
+bank_treecv
+```
+
+\
+
+- `caret` elige automáticamente la mejor configuración según el kappa promedio en validación cruzada. Predecimos en prueba y evaluamos:
+
+\
+
+```{r}
+bank_pred_treecv <- predict(bank_treecv, bank_test)
+confusionMatrix(data = bank_pred_treecv, reference = bank_test$y, positive = "yes")
+```
+
+\
+
+- La validación cruzada da una estimación más robusta del desempeño y elige los hiperparámetros (aquí, si conviene activar el *boosting*). Aun así, el desbalance sigue siendo un reto —la sensibilidad sobre la clase minoritaria es baja—, y lo atacamos de frente en el taller de desbalance.
+
+\
+
+---
+
+*Nota sobre los datos: `bank.csv` aquí es una muestra aleatoria de 5.000 registros (semilla 123) de la base UCI Bank Marketing (~41.000 registros), tomada para que los talleres corran rápido en clase conservando el desbalance de clase original (~11% de "yes").*

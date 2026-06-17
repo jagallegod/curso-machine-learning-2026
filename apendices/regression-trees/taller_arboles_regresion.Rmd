@@ -1,0 +1,405 @@
+---
+title: "Árboles de Regresión en R"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+
+\
+
+
+# 1. Introducción
+
+\
+
+
+- Los métodos de regresión son la herramienta más popular para predicción numérica
+
+- Pero pueden tener problemas
+
+- En particular cuando se tienen muchos predictores
+
+- O cuando existen relaciones complejas (no-lineales) entre outcomes y predictores
+
+- Los árboles de regresión y los modelos de árboles son una alternativa interesante
+
+- Al igual que en clasificación, la esencia está en dividir las observaciones
+
+- De tal forma que pasemos de un grupo grande heterogéneo, a grupos pequeños homogéneos
+
+- La diferencia está en la regla de predicción al llegar a los nodos términales
+
+- En los árboles de regresión, se calcula un promedio 
+
+- En los modelos de árbol, se corre una regresión en cada nodo terminal
+
+- Veremos cómo implementar los árboles de regresión en R
+
+- Para ello, usaremos datos de vinos. El objetivo es predecir la calidad de vinos blancos
+
+- La idea es crear un sistema que simule lo que hacen los catadores de vino
+
+- De tal forma que con base en ciertas características de los vinos se prediga su calidad
+
+
+
+\
+
+
+# 2. Datos
+
+\
+
+
+- Usaremos la base `whitewines.csv`, del `UCI Machine Learning Data Repository`
+
+- La base contiene información de diferentes vinos portugueses, incluyendo la calificación de calidad hecha por expertos
+
+- Se incluyen 11 propiedades químicas para 4898 muestras de vino
+
+- Cada muestra fue calificada por un panel de mínimo tres jueces que cataron ciegamente cada uno y calificaron en una escala de 0 a 10
+
+- Carguemos los datos. Como siempre, no olviden fijar el directorio de trabajo
+
+\
+
+```{r}
+wine<- read.csv("data/whitewines.csv")
+```
+
+\ 
+
+
+- En este caso no nos preocupamos por los strings porque todas las variables son numéricas
+
+- Veamos la estructura de los datos:
+
+\
+
+```{r}
+str(wine)
+```
+
+
+\
+
+
+- Como anticipamos tenemos una base con 4898 muestras de vino y 12 variables, todas numéricas
+
+- Once de ellas son características químicas del vino
+
+- La última, `quality`, es el outcome de interés
+
+- Veamos cómo se distribuye
+
+\
+
+
+
+```{r}
+hist(wine$quality)
+```
+
+
+\
+
+
+- La distribución es relativamente normal, la mayoría de vinos obtiene 6 de calificación
+
+- Unos pocos son muy malos y unos pocos son muy buenos
+
+- Dividamos nuestra base en dos, para entrenamiento y prueba
+
+- Usaremos 3750 observaciones (~75%) para entrenamiento y el resto para prueba
+
+- Para ello, creemos el vector de números aleatorios
+
+
+\
+
+
+```{r}
+set.seed(123)
+train_sample <- sample(4898, 3750)
+```
+
+\
+
+
+- Y ahora las bases de entrenamiento y prueba
+
+\
+
+
+```{r}
+wine_train <- wine[train_sample, ]
+wine_test <- wine[-train_sample, ]
+```
+
+
+\
+
+
+- Y con esto estamos listos para implementar los modelos
+
+\
+
+
+# 3. Árbol de Regresión
+
+
+\
+
+
+- Comencemos entrenando un árbol de regresión
+
+- Para ello usaremos el paquete `rpart`
+
+- Instalémoslo con `install.packages("rpart")` y carguémoslo
+
+
+
+\
+
+
+```{r}
+library(rpart)
+```
+
+\
+
+
+- El modelo se construye en dos etapas
+
+- En la primera etapa construimos el árbol usando los datos de prueba
+
+- Para ello usamos la función `rpart` que tiene la siguiente sintaxis: `m <- rpart(dv ~ iv, data=mydata)`
+
+
+- Con esto obtendremos un árbol de regresión que puede usarse para hacer las predicciones
+
+- Estas las hacemos con la función `predict`, según la siguiente sintaxis: `p <- predict(m, test, type="vector")`
+
+- Que en este caso devuelve el vector de predicciones númericas para cada ejemplo en el conjunto de prueba
+
+- Pasemos ahora sí a entrenar nuestro modelo
+
+\
+
+```{r}
+m.rpart <- rpart(quality ~ ., data=wine_train)
+```
+
+
+\
+
+
+- Si invocamos el modelo, obtenemos alguna información básica:
+
+
+
+\
+
+```{r}
+m.rpart 
+```
+
+
+\
+
+
+
+- El número de observaciones, la variable y el valor en el que se divide, una medida desviación en el nodo y el pronóstico
+
+- Los nodos con `*` son nodos terminales
+
+
+- Con la función `summary()` podemos obtener más información, incluyendo medidas de importancia de variables
+
+
+
+\
+
+
+```{r}
+summary(m.rpart) 
+```
+
+
+\
+
+
+- De hecho, puede ser más útil visualizar el árbol como tal
+
+- Esto lo hacemos con un paquete aparte: `install.packages("rpart.plot")` 
+
+
+```{r}
+library(rpart.plot)
+```
+
+
+
+\
+
+
+- Y podemos visualizar el árbol:
+
+
+\
+
+
+```{r}
+rpart.plot(m.rpart, digits=3) 
+```
+
+\
+
+
+
+- Como ven, el árbol es bastante elocuente e intuitivo. Nos dice qué porcentaje de casos cae en cada nodo y cuál es la predicción
+
+
+- Ahora, usando los datos de prueba, podemos evaluar el desempeño del modelo
+
+
+- Usamos la función `predict()` para ello
+
+\
+
+
+
+```{r}
+p.rpart <- predict(m.rpart, wine_test)
+```
+
+\
+
+
+- Se ha creado un vector con la calidad pronosticada para cada muestra de vino en el conjunto de prueba
+
+
+\
+
+
+
+```{r}
+summary(p.rpart) 
+```
+
+
+\
+
+
+- Se ve que hay poca varianza, lo cual es problemático
+
+- Va a ser imposible pronosticar cuáles vinos son muy buenos o muy malos, que los hay en la base de prueba
+
+
+\
+
+
+```{r}
+summary(wine_test$quality) 
+```
+
+
+\
+
+
+
+- Una primera forma de ver si nuestro modelo lo hace bien es examinando la correlación entre pronósticos y valores reales
+
+
+\
+
+
+```{r}
+cor(p.rpart, wine_test$quality)
+```
+
+
+
+\
+
+
+- Es una correlación alta pero no como para sacar el carro de bomberos
+
+
+- Necesitamos una medida más precisa del desempeño del modelo
+
+- Usaremos el error absoluto medio (mean absolute error MAE): 
+
+- $MAE=\frac{1}{n}\sum_{i=1}^n|e_i|$
+
+- donde $e_i$ es el error de predicción para la observación $i$
+
+- Creemos una función para calcular el MAE
+
+
+\
+
+```{r}
+MAE <- function(actual, predicted){
+  mean(abs(actual-predicted))
+}
+```
+
+
+\
+
+
+- Implementemos la función para nuestro modelo:
+
+
+\
+
+
+```{r}
+MAE(p.rpart, wine_test$quality)
+```
+
+
+\
+
+
+- Obtenemos un MAE de 0.62. En promedio, la diferencia entre nuestras predicciones y las calidades reales de los vinos de prueba es 0.62
+
+- Recordemos que la escala va de 0 a 10, así que no lo estamos haciendo tan mal
+
+- Pero tampoco es tan impresionante en comparación con predecir la media del conjunto de prueba
+
+
+\
+
+
+```{r}
+mean(wine_train$quality)
+MAE(5.8912, wine_test$quality)
+```
+
+
+
+\
+
+
+- Dicho modelo ingenuo logra un MAE de 0.69. No es muy distinto al que alcanzamos nosotros
+
+
+
+
+
+
+
+
+
+
+\
+
+
+
+
+
+
+

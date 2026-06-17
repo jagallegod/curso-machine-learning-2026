@@ -1,0 +1,135 @@
+---
+title: "Selección e importancia de variables en R"
+output:
+ html_notebook: default
+---
+
+# 1. Introducción
+
+\
+
+- No todas las variables aportan lo mismo a un modelo. Algunas son redundantes o irrelevantes.
+
+- **Seleccionar variables** tiene dos beneficios: modelos más **interpretables** y con menos riesgo de **sobreajuste**.
+
+- Hay tres familias de métodos:
+    - **Filtro**: rankear cada variable por una medida (correlación, ganancia de información), independiente del modelo.
+    - **Envoltura** (*wrapper*): probar subconjuntos de variables y quedarse con el mejor (p. ej. *stepwise*, *recursive feature elimination*).
+    - **Embebido**: la selección es parte del propio modelo (Lasso, árboles de decisión).
+
+- En este taller usaremos la **importancia de variables** que produce un árbol C5.0 (un método embebido) para rankear y luego seleccionar.
+
+\
+
+# 2. Datos
+
+\
+
+- Reutilizamos `credit.csv` (1.000 créditos en Alemania), prediciendo el *default*. Leemos con factores y convertimos el *outcome*:
+
+\
+
+```{r}
+credit <- read.csv("data/credit.csv", stringsAsFactors = TRUE)
+credit$default <- factor(credit$default)
+```
+
+\
+
+- Dividimos en entrenamiento (90%) y prueba (10%):
+
+\
+
+```{r}
+set.seed(123)
+train_sample <- sample(1000, 900)
+credit_train <- credit[train_sample, ]
+credit_test  <- credit[-train_sample, ]
+```
+
+\
+
+# 3. Importancia de variables
+
+\
+
+- Entrenamos un árbol C5.0 con **todas** las variables (la columna 21 es `default`):
+
+\
+
+```{r}
+library(C50)
+credit_model <- C5.0(credit_train[-21], credit_train$default)
+```
+
+\
+
+- El paquete `C50` trae la función `C5imp()`, que mide la importancia de cada variable. Con `metric = "usage"` reporta el porcentaje de casos cuya clasificación depende de cada variable:
+
+\
+
+```{r}
+importancia <- C5imp(credit_model, metric = "usage")
+importancia
+```
+
+\
+
+- Las primeras variables (saldo en cuenta corriente, meses del crédito, historial...) son las más usadas por el árbol. Muchas variables al final aportan poco o nada.
+
+\
+
+# 4. Selección: quedarnos con las más importantes
+
+\
+
+- Probemos un modelo más **parsimonioso**: solo con las 8 variables más importantes. Extraemos sus nombres:
+
+\
+
+```{r}
+top8 <- rownames(importancia)[1:8]
+top8
+```
+
+\
+
+- Reentrenamos el árbol usando únicamente esas variables:
+
+\
+
+```{r}
+credit_model_top <- C5.0(credit_train[, top8], credit_train$default)
+```
+
+\
+
+- Comparemos el desempeño en la base de **prueba** del modelo completo (20 variables) contra el reducido (8 variables):
+
+\
+
+```{r}
+pred_full <- predict(credit_model, credit_test)
+pred_top  <- predict(credit_model_top, credit_test)
+
+acc_full <- mean(pred_full == credit_test$default)
+acc_top  <- mean(pred_top  == credit_test$default)
+c(completo = round(acc_full, 3), reducido = round(acc_top, 3))
+```
+
+\
+
+- Con menos de la mitad de las variables, el modelo reducido suele alcanzar una precisión **similar** (a veces incluso mejor) en prueba: más simple, más fácil de explicar y menos propenso a sobreajustar.
+
+\
+
+# 5. Para cerrar
+
+\
+
+- Usamos un método **embebido** (la importancia del árbol). Otras opciones:
+    - **Filtro**: en R, `caret::filterVarImp()` rankea variables sin entrenar un modelo complejo.
+    - **Envoltura**: `caret::rfe()` (recursive feature elimination) prueba subconjuntos sistemáticamente.
+    - **Embebido**: el **Lasso** (sesión anterior) anula coeficientes y selecciona variables al estimar.
+
+- La regla práctica: empezar por entender e ingeniar buenas variables suele rendir más que añadir complejidad al modelo.

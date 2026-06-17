@@ -1,0 +1,262 @@
+---
+title: "Regresión lineal y logística en R"
+output:
+ html_notebook: default
+---
+
+# 1. Introducción
+
+\
+
+- R es muy dúctil para implementar regresiones lineales y logísticas; al ser el método más popular, hay muchas posibilidades.
+
+- Veremos algunas funciones básicas, sin agotar todos los métodos disponibles.
+
+- Trabajaremos con una base (artificial) sobre seguros médicos.
+
+- Para una aseguradora es clave recoger en primas más de lo que gasta en sus asegurados: eso garantiza la rentabilidad del negocio.
+
+- Por eso dedican grandes esfuerzos a predecir los gastos médicos de sus asegurados.
+
+- El análisis que sigue usa datos de los pacientes para predecir el gasto médico promedio de distintos segmentos de la población.
+
+\
+
+# 2. Datos
+
+\
+
+- Usaremos los datos simulados de `insurance.csv`. Los leemos con `stringsAsFactors = TRUE` para que las variables de texto (sexo, fumador, región) queden como factores:
+
+\
+
+```{r}
+insurance <- read.csv("data/insurance.csv", stringsAsFactors = TRUE)
+```
+
+\
+
+- Veamos qué variables tiene:
+
+\
+
+```{r}
+names(insurance)
+str(insurance)
+```
+
+\
+
+- El *outcome* de interés es `charges` (el gasto total de cada paciente). Explorémoslo:
+
+\
+
+```{r}
+summary(insurance$charges)
+```
+
+\
+
+```{r}
+hist(insurance$charges)
+```
+
+\
+
+- Está sesgado a la derecha: la mayoría gasta entre 0 y 15.000, pero hay *outliers* que le cuestan mucho al sistema.
+
+\
+
+# 3. Correlación
+
+\
+
+- Una primera mirada es la correlación entre las variables numéricas. No implica causalidad, pero indica cómo se asocian. Usamos `cor()`:
+
+\
+
+```{r}
+cor(insurance[c("age", "bmi", "children", "charges")])
+```
+
+\
+
+- Las correlaciones son positivas pero en general débiles, y tienen sentido: a mayor edad, BMI o número de hijos, mayor gasto médico.
+
+- También podemos verlas con una matriz de dispersión, usando `pairs()`:
+
+\
+
+```{r}
+pairs(insurance[c("age", "bmi", "children", "charges")])
+```
+
+\
+
+# 4. Entrenamiento del modelo lineal
+
+\
+
+- Aquí, "entrenar" el modelo es correr la regresión: con el modelo resultante hacemos las predicciones.
+
+- Usamos `lm()`, con sintaxis `m <- lm(dv ~ iv, data = mydata)`, donde `dv` es la variable dependiente, `iv` las independientes y `mydata` la base.
+
+- Predigamos los gastos usando todas las variables, incluidas las categóricas:
+
+\
+
+```{r}
+ins_model <- lm(charges ~ age + children + bmi + sex + smoker + region, data = insurance)
+ins_model
+```
+
+\
+
+- Estos son los coeficientes, pero aún no sabemos qué tan bueno es el modelo.
+
+\
+
+# 5. Desempeño del modelo lineal
+
+\
+
+- Evaluamos tres cosas: (i) los **residuales** (diferencia entre observado y pronosticado, los queremos bajos); (ii) el **poder explicativo** de cada predictor (¿coeficientes significativos?); y (iii) la **bondad de ajuste** (¿qué fracción de la varianza de $y$ explican los predictores?). Todo eso lo da `summary()`:
+
+\
+
+```{r}
+summary(ins_model)
+```
+
+\
+
+- Edad, número de hijos, BMI y tabaquismo son altamente significativos.
+
+- Estos predictores explican alrededor del 75% de la variación en los gastos ($R^2 \approx 0.75$). Nada mal.
+
+\
+
+# 6. Mejorando el desempeño
+
+\
+
+- El modelo puede mejorar incluyendo interacciones o términos no lineales. Esa flexibilidad es una ventaja, pero también un riesgo: el humano decide la especificación (conviene tener siempre un argumento teórico).
+
+- Probemos tres cosas: un término cuadrático de edad, una *dummy* de obesidad, y una interacción entre obesidad y tabaquismo.
+
+\
+
+```{r}
+insurance$age2 <- insurance$age^2
+insurance$obesity <- ifelse(insurance$bmi >= 30, 1, 0)
+```
+
+\
+
+- La interacción se incluye directamente en `lm()` con el término `obesity*smoker`:
+
+\
+
+```{r}
+ins_model2 <- lm(charges ~ age + age2 + children + bmi + sex + smoker + obesity + obesity*smoker + region,
+                 data = insurance)
+summary(ins_model2)
+```
+
+\
+
+- Hay evidencia de no-linealidad en edad (a mayor edad, mayor efecto marginal) y de complementariedad obesidad--tabaquismo (entre los fumadores, los obesos son más costosos).
+
+- El $R^2$ sube de ~0.75 a ~0.87: ahora explicamos cerca del 87% de la variación. El modelo mejoró bastante.
+
+\
+
+# 7. Entrenamiento del modelo Logit
+
+\
+
+- Supongamos que no nos interesa el gasto exacto, sino solo si un asegurado resulta "demasiado" costoso.
+
+- Definamos "demasiado costoso" como estar por encima del percentil 75 (aquí, $16.640). Creamos la *dummy*:
+
+\
+
+```{r}
+insurance$expensive <- as.numeric(insurance$charges > 16640)
+prop.table(table(insurance$expensive))
+```
+
+\
+
+- Para un *outcome* binario usamos `glm()`, especificando la familia binomial con enlace logit:
+
+\
+
+```{r}
+ins_model_logit <- glm(expensive ~ age + children + bmi + sex + smoker + region,
+                       family = binomial(link = "logit"), data = insurance)
+summary(ins_model_logit)
+```
+
+\
+
+- Edad, hijos, BMI y tabaquismo se asocian con ser muy costoso.
+
+\
+
+# 8. Evaluando el desempeño del modelo Logit
+
+\
+
+- Calculamos la probabilidad de ser costoso para cada observación con `predict(..., type = "response")`:
+
+\
+
+```{r}
+ins_logit_pred <- predict(ins_model_logit, type = "response")
+```
+
+\
+
+- Criterio: si la probabilidad supera 0.5, predecimos "costoso":
+
+\
+
+```{r}
+expensive_pred <- ifelse(ins_logit_pred > 0.5, 1, 0)
+```
+
+\
+
+- Comparamos con lo observado y medimos la precisión:
+
+\
+
+```{r}
+agreement <- expensive_pred == insurance$expensive
+prop.table(table(agreement))
+```
+
+\
+
+- La precisión total ronda el 93%. Construyamos la matriz de confusión:
+
+\
+
+```{r, eval=FALSE}
+install.packages("gmodels")
+```
+
+\
+
+```{r}
+library(gmodels)
+CrossTable(insurance$expensive, expensive_pred, prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
+           dnn = c("real", "pronóstico"))
+```
+
+\
+
+- Aquí probablemente nos interesan los **falsos negativos** (asegurados que sí serán costosos pero el modelo no detecta): su tasa es relativamente alta.
+
+- **Tarea**: como con otros algoritmos, dividan la base en entrenamiento y prueba, estimen el modelo en entrenamiento y verifiquen su precisión en prueba.

@@ -1,0 +1,136 @@
+---
+title: "Representación de datos con PCA en R"
+output:
+ html_notebook: default
+---
+
+# 1. Introducción
+
+\
+
+- Muchos problemas tienen decenas de variables, difíciles de visualizar y a menudo **redundantes** (correlacionadas).
+
+- El **Análisis de Componentes Principales** (PCA) resume esa información en unas pocas variables nuevas (las *componentes*), combinaciones lineales de las originales.
+
+- La 1.ª componente apunta en la dirección de **máxima varianza**; las siguientes son ortogonales y captan la varianza restante.
+
+- Es un método **no supervisado**: solo usa las características, no un *outcome*.
+
+\
+
+# 2. Datos
+
+\
+
+- Reutilizamos los datos de cáncer de seno de la sesión 1 (`wisc_bc_data.csv`), con 30 variables numéricas que describen el núcleo celular.
+
+\
+
+```{r}
+wbcd <- read.csv("data/wisc_bc_data.csv", stringsAsFactors = FALSE)
+```
+
+\
+
+- La columna 1 es un identificador y la 2 el diagnóstico (`B`/`M`). Las 30 características numéricas están en las columnas 3 a 32. Guardamos el diagnóstico aparte (solo para colorear al final; PCA **no** lo usa):
+
+\
+
+```{r}
+diagnosis <- factor(wbcd$diagnosis, levels = c("B", "M"), labels = c("Benigno", "Maligno"))
+features <- wbcd[, 3:32]
+```
+
+\
+
+# 3. Aplicar PCA
+
+\
+
+- Usamos `prcomp()` de R base. Como las variables están en escalas muy distintas, fijamos `scale. = TRUE` para estandarizarlas:
+
+\
+
+```{r}
+pca <- prcomp(features, scale. = TRUE)
+```
+
+\
+
+- `summary()` muestra la varianza explicada por cada componente y la acumulada:
+
+\
+
+```{r}
+summary(pca)
+```
+
+\
+
+- Fíjate en la fila *Cumulative Proportion*: con pocas componentes ya acumulamos buena parte de la varianza de las 30 variables originales.
+
+\
+
+# 4. ¿Cuántas componentes? (gráfica de sedimentación)
+
+\
+
+- Calculemos la proporción de varianza que explica cada componente y grafiquémosla (*scree plot*):
+
+\
+
+```{r}
+ve <- pca$sdev^2 / sum(pca$sdev^2)
+plot(ve, type = "b", pch = 16,
+     xlab = "Componente principal", ylab = "Proporción de varianza explicada",
+     main = "Gráfica de sedimentación (scree plot)")
+```
+
+\
+
+- La varianza acumulada de las primeras componentes:
+
+\
+
+```{r}
+round(cumsum(ve)[1:5], 3)
+```
+
+\
+
+- Nos quedamos con las componentes hasta el "codo": donde añadir más ya aporta poco.
+
+\
+
+# 5. Proyección a 2 dimensiones
+
+\
+
+- Las coordenadas de cada observación en las nuevas componentes están en `pca$x`. Proyectemos los datos en las 2 primeras componentes y coloreemos por diagnóstico:
+
+\
+
+```{r}
+plot(pca$x[, 1], pca$x[, 2], col = c("steelblue", "red")[as.integer(diagnosis)], pch = 16,
+     xlab = "Componente principal 1", ylab = "Componente principal 2",
+     main = "30 variables resumidas en 2 componentes")
+legend("topright", levels(diagnosis), col = c("steelblue", "red"), pch = 16, bty = "n")
+```
+
+\
+
+- Aunque PCA **no** usó el diagnóstico, los casos benignos y malignos quedan en zonas casi separadas: la estructura del problema sobrevive al pasar de 30 a 2 dimensiones.
+
+\
+
+# 6. Para cerrar
+
+\
+
+- PCA es **lineal**. Para estructuras no lineales existen métodos como **t-SNE** o **UMAP**, muy usados para visualización.
+
+- Estas representaciones compactas también sirven como **insumo** para modelos supervisados, o para comprimir y visualizar.
+
+- Es la misma idea que, llevada a redes neuronales, da lugar a los **embeddings** (próxima sesión).
+
+- Como ejercicio: usa solo las 2 primeras componentes (`pca$x[, 1:2]`) como predictores de un modelo de clasificación y compara con usar las 30 variables.

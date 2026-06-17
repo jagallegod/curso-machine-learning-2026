@@ -1,0 +1,912 @@
+\documentclass{beamer}
+
+\usepackage{soul}
+
+
+\usetheme{Boadilla}
+
+\setbeamersize{text margin left=1cm,text margin right=1cm}
+
+% DEFINITON FOOTLINE
+% here: empty
+\setbeamertemplate{footline}
+{%
+\begin{beamercolorbox}{}
+\end{beamercolorbox}%
+}
+
+
+\usepackage[english]{babel}
+\usepackage[latin1]{inputenc}
+\usepackage{color}
+\usepackage{graphicx}
+\graphicspath{{img/}}
+\usepackage{setspace}
+%\usepackage[pdftex]{graphicx}
+
+%TABELLEN
+\usepackage{array}
+%\usepackage{ctable}		%Tabellen mit Fussoten
+\usepackage{multirow}
+\usepackage{booktabs}
+	% Neue Tabellenbefehle in der array Umgebung
+	\renewcommand{\arraystretch}{1.2} % Zeilenabstand
+	\newcolumntype{C}[1]{>{\centering\let\\\tabularnewline}p{#1}}
+	\newcolumntype{R}[1]{>{\raggedleft\let\\\tabularnewline}p{#1}}
+	\newcolumntype{L}[1]{>{\raggedright\let\\\tabularnewline}p{#1}}
+
+\setbeamercovered{transparent}
+
+
+\title{Aprendizaje de Máquinas\\ Introducción, KNN y Naive Bayes}
+\author{Jorge Gallego}
+\institute{Inter-American Development Bank}
+
+\date{Bogotá Summer School in Economics --- 2026}
+
+\begin{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\frame{\titlepage}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Agenda de la sesión}
+
+\begin{itemize}
+
+\item[1.] Introducción al aprendizaje de máquinas \vspace{0.3cm}
+
+\begin{itemize}
+\item ¿Qué es? ¿Para qué sirve? \vspace{0.1cm}
+\item Causalidad vs. predicción \vspace{0.1cm}
+\item Tipos de aprendizaje y aplicaciones
+\end{itemize}
+\vspace{0.3cm}
+
+\item[2.] Clasificación con vecinos más cercanos (KNN) \vspace{0.3cm}
+
+\item[3.] Aprendizaje probabilístico: Naive Bayes \vspace{0.3cm}
+
+\item En cada técnica: intuición en las diapositivas y un taller práctico en R
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%   PARTE 1: INTRODUCCIÓN   %%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+\begin{center}
+{\Huge \textbf{Parte 1}}\\[0.5cm]
+{\large Introducción al aprendizaje de máquinas}
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Machine learning en la vida cotidiana}
+
+\begin{itemize}
+
+\item Usamos aprendizaje de máquinas todos los días, casi sin notarlo \vspace{0.3cm}
+
+\item El filtro de spam de Gmail \vspace{0.3cm}
+
+\item Los asistentes de voz como Alexa o Siri \vspace{0.3cm}
+
+\item Las recomendaciones de Netflix o Spotify \vspace{0.3cm}
+
+\item Los carros sin conductor \vspace{0.3cm}
+
+\item La evaluación de riesgo crediticio o la detección de fraude
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Filtros de spam}
+
+\begin{figure}
+\includegraphics[scale=0.2]{spam.jpg}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Carros sin conductor}
+
+\begin{figure}
+\includegraphics[scale=0.6]{selfdrivingcar.jpeg}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{¿Qué tienen en común?}
+
+\begin{itemize}
+
+\item Todos se basan en grandes volúmenes de información (\textit{big data}) \vspace{0.3cm}
+
+\item Que proviene de diversas fuentes y se almacena sistemáticamente \vspace{0.3cm}
+
+\item Y que se procesa con técnicas matemáticas, estadísticas y computacionales \vspace{0.3cm}
+
+\item A ese conjunto de técnicas lo llamamos \textit{Machine Learning}
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{¿Qué es Machine Learning?}
+
+\begin{itemize}
+
+\item Es un campo de la inteligencia artificial \vspace{0.3cm}
+
+\item Estudia algoritmos que \textbf{transforman los datos en acción inteligente} \vspace{0.3cm}
+
+\item Son sistemas que \textbf{mejoran su desempeño con la experiencia} \vspace{0.3cm}
+
+\item No es que por primera vez tengamos muchos datos: siempre los hemos tenido \vspace{0.3cm}
+
+\item Lo nuevo es nuestra capacidad de almacenarlos y de analizarlos mejor
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Los tres pilares}
+
+\begin{itemize}
+\item El aprendizaje de máquinas surge de la coevolución de tres cosas:
+
+\begin{enumerate}
+\item[1.] Datos disponibles
+\item[2.] Poder computacional
+\item[3.] Métodos estadísticos
+\end{enumerate}
+
+\end{itemize}
+
+\begin{figure}
+\includegraphics[scale=0.55]{coevolucion.pdf}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Un campo en la intersección}
+
+\begin{figure}
+\includegraphics[scale=0.35]{Conway.png}
+\end{figure}
+
+\begin{center}
+\small La ciencia de datos combina estadística, computación y conocimiento del dominio
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Aprendizaje supervisado y no supervisado}
+
+\begin{itemize}
+
+\item \textbf{Aprendizaje supervisado}: buscamos predecir una característica de interés (el \textit{outcome}) en función de las demás \vspace{0.3cm}
+
+\begin{itemize}
+\item Partimos de ejemplos ya ``etiquetados'' para entrenar
+\item Ejemplo: predecir si un correo es spam usando su contenido
+\end{itemize}
+\vspace{0.3cm}
+
+\item \textbf{Aprendizaje no supervisado}: buscamos describir o resumir los datos \vspace{0.3cm}
+
+\begin{itemize}
+\item Ninguna característica es más importante que las demás
+\item Ejemplo: agrupar clientes con comportamiento similar
+\end{itemize}
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Tipos de problemas}
+
+\begin{itemize}
+
+\item \textbf{Clasificación} (supervisado): predecir una categoría \vspace{0.2cm}
+\begin{itemize}
+\item ¿Es spam o no? ¿La célula es benigna o maligna? ¿Hará default?
+\end{itemize}
+\vspace{0.3cm}
+
+\item \textbf{Predicción numérica} (supervisado): predecir un valor continuo \vspace{0.2cm}
+\begin{itemize}
+\item Ingreso, precio de una vivienda, gasto en salud
+\end{itemize}
+\vspace{0.3cm}
+
+\item \textbf{Clustering} (no supervisado): dividir los datos en grupos homogéneos \vspace{0.3cm}
+
+\item \textbf{Descubrimiento de patrones} (no supervisado): asociaciones, anomalías
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Causalidad vs. Predicción}
+
+``Los datos son el nuevo petróleo; como el petróleo, deben refinarse antes de usarse'' (Andreas Weigend) \vspace{0.3cm}
+
+\begin{itemize}
+
+\item Los datos son cruciales para el diseño y la evaluación de políticas públicas \vspace{0.3cm}
+
+\item Pero, ¿cómo usarlos según el caso? \vspace{0.3cm}
+
+\item No es lo mismo querer \textbf{explicar} que querer \textbf{pronosticar} \vspace{0.3cm}
+
+\item Veamos dos ejemplos de ``juguete''
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Causalidad vs. Predicción}
+
+¿Podemos hacer llover si invertimos en la ``danza de la lluvia''?
+
+\begin{figure}
+\includegraphics[scale=0.6]{sequia.jpg}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Causalidad vs. Predicción}
+
+¿Es beneficioso salir hoy a la calle con sombrilla?
+
+\begin{figure}
+\includegraphics[scale=0.2]{rain.jpg}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Causalidad vs. Predicción}
+
+\begin{itemize}
+
+\item Son dos preguntas distintas sobre el clima \vspace{0.3cm}
+
+\item En la primera, importa la \textbf{\textit{causalidad}}: ¿la danza \emph{causa} la lluvia? \vspace{0.3cm}
+
+\item En la segunda, importa la \textbf{\textit{predicción}}: ¿es tan probable que llueva como para sacar la sombrilla? \vspace{0.3cm}
+
+\item En argot de política pública: \textbf{Evaluación de Impacto} vs. \textbf{Big Data} \vspace{0.3cm}
+
+\item Este curso se concentra en el segundo problema: \textbf{predecir bien}
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Machine learning para políticas públicas}
+
+Algunas preguntas donde la predicción ayuda a decidir: \vspace{0.3cm}
+
+\begin{itemize}
+
+\item \textbf{Justicia}: ¿qué tan probable es que un sospechoso reincida? \vspace{0.3cm}
+
+\item \textbf{Seguridad}: ¿dónde ocurrirán los próximos delitos (\textit{hotspots})? \vspace{0.3cm}
+
+\item \textbf{Salud}: ¿a qué pacientes conviene asignar un tratamiento costoso? \vspace{0.3cm}
+
+\item \textbf{Corrupción}: ¿qué contratos públicos tienen mayor riesgo de terminar mal?
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Seguridad: predicción de crimen}
+
+\begin{figure}
+\includegraphics[scale=0.2]{hotspots.pdf}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Ética y Machine Learning}
+
+\begin{itemize}
+
+\item Estas técnicas no están libres de riesgos \vspace{0.3cm}
+
+\item Los \textbf{falsos positivos} pueden ser muy costosos (un sospechoso, un paciente) \vspace{0.3cm}
+
+\item Los algoritmos pueden \textbf{heredar sesgos} de los datos con que se entrenan \vspace{0.3cm}
+
+\item Y está el tema de la \textbf{privacidad}: ¿cuánto estamos dispuestos a ceder? \vspace{0.3cm}
+
+\item El humano sigue siendo necesario para motivar el análisis y dar sentido a los resultados
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{El mapa del curso}
+
+\begin{itemize}
+
+\item[I.] Aprendizaje supervisado: \textbf{clasificación} (KNN, Naive Bayes, SVM, árboles) \vspace{0.3cm}
+
+\item[II.] Aprendizaje supervisado: \textbf{predicción numérica} (regresión, Ridge, Lasso) \vspace{0.3cm}
+
+\item[III.] \textbf{Desempeño} de modelos (evaluación, variables, desbalance, ensamblaje) \vspace{0.3cm}
+
+\item[IV.] Aprendizaje \textbf{no supervisado} (clustering, anomalías, representación) \vspace{0.3cm}
+
+\item[V.] Aprendizaje \textbf{profundo} (redes neuronales: ANNs, CNNs, RNNs) \vspace{0.3cm}
+
+\item Hoy arrancamos con la Parte I
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Herramientas}
+
+\begin{itemize}
+
+\item Trabajaremos con el lenguaje \textbf{R} y el entorno \textbf{RStudio} \vspace{0.3cm}
+
+\item La parte conceptual va en estas diapositivas; la práctica, en \textit{notebooks} (\texttt{.Rmd}) \vspace{0.3cm}
+
+\item La filosofía: usar paquetes que hacen el trabajo pesado, \vspace{0.1cm} pero entendiendo \textbf{paso a paso} qué hace cada línea \vspace{0.3cm}
+
+\item Cada técnica tiene su propio taller con datos reales
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%   PARTE 2: KNN   %%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+\begin{center}
+{\Huge \textbf{Parte 2}}\\[0.5cm]
+{\large Clasificación con vecinos más cercanos (KNN)}
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Un principio básico}
+
+\begin{itemize}
+
+\item Para clasificar partimos de una idea muy intuitiva \vspace{0.3cm}
+
+\item \textbf{Las cosas que son parecidas tienen propiedades parecidas} \vspace{0.3cm}
+
+\item ``Blanco es, gallina lo pone, frito se come'' \vspace{0.3cm}
+
+\item Los algoritmos de \textit{machine learning} usan este principio para clasificar \vspace{0.3cm}
+
+\item En una misma categoría caen los elementos similares, o \textit{vecinos más cercanos}
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{El algoritmo kNN}
+
+\begin{itemize}
+
+\item El más popular es \textbf{kNN} (\textit{k nearest neighbors}, k vecinos más cercanos) \vspace{0.3cm}
+
+\item Ventajas:
+\begin{itemize}
+\item Simple y efectivo
+\item No hace supuestos sobre la distribución de los datos
+\item Fase de entrenamiento muy rápida
+\end{itemize}
+\vspace{0.2cm}
+
+\item Desventajas:
+\begin{itemize}
+\item No produce un modelo: es difícil ver la relación entre variables
+\item Requiere elegir bien el valor de k
+\item Fase de clasificación lenta
+\end{itemize}
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{¿Cómo clasifica kNN?}
+
+\begin{itemize}
+
+\item Partimos de un conjunto de datos ya clasificados (entrenamiento) \vspace{0.3cm}
+
+\item Elegimos un número k de vecinos \vspace{0.3cm}
+
+\item Para cada caso \textbf{sin clasificar}, buscamos sus k vecinos más cercanos \vspace{0.3cm}
+
+\item El caso se asigna a la categoría de la \textbf{mayoría} de esos vecinos
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Ejemplo: clasificar alimentos}
+
+\begin{itemize}
+
+\item A una persona con los ojos vendados se le pide clasificar un alimento \vspace{0.3cm}
+
+\item Tenemos una base de otros alimentos, descritos por dos características: \vspace{0.3cm}
+
+\begin{itemize}
+\item Qué tan crujiente es (de 1 a 10)
+\item Qué tan dulce es (de 1 a 10)
+\end{itemize}
+\vspace{0.3cm}
+
+\item Y sabemos su grupo: fruta, vegetal o proteína
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Ejemplo: clasificar alimentos}
+
+\begin{figure}
+\includegraphics[scale=0.65]{tablaalimentos.pdf}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Ejemplo: clasificar alimentos}
+
+¿Se reconoce algún patrón?
+
+\begin{figure}
+\includegraphics[scale=0.7]{planoalimentos.pdf}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Ejemplo: clasificar alimentos}
+
+¿El tomate es fruta o verdura?
+
+\begin{figure}
+\includegraphics[scale=0.7]{planoalimentos3.pdf}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Distancia euclídea}
+
+\begin{itemize}
+
+\item Para hallar los vecinos más cercanos necesitamos una medida de distancia \vspace{0.3cm}
+
+\item La más usada es la \textbf{distancia euclídea}: la longitud del segmento que une dos puntos \vspace{0.3cm}
+
+\item Entre dos vectores $m$-dimensionales, $p$ y $q$:
+
+\[
+dist(p,q)=\sqrt{\sum_{i=1}^m (p_i-q_i)^2}
+\]
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Distancia al tomate}
+
+\begin{itemize}
+\item Calculamos la distancia del tomate a cada alimento:
+\end{itemize}
+
+\begin{figure}
+\includegraphics[scale=0.65]{distance.pdf}
+\end{figure}
+
+\begin{itemize}
+\item Con $k=1$, el vecino más cercano es la naranja: sería \textbf{fruta} \vspace{0.2cm}
+\item Con $k=3$ (naranja, uva, nueces): también \textbf{fruta}
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{La elección de k}
+
+\begin{itemize}
+
+\item Cuántos vecinos usar es una decisión crucial: hay un \textit{trade-off} sesgo--varianza \vspace{0.3cm}
+
+\item k \textbf{grande}: menos sensible al ruido, pero puede ignorar patrones pequeños \vspace{0.3cm}
+
+\item k \textbf{pequeño}: capta detalles, pero una observación ruidosa puede dañar la clasificación \vspace{0.3cm}
+
+\item No hay regla universal. Una heurística común es $k=\sqrt{n}$ \vspace{0.3cm}
+
+\item Mejor aún: probar varios k y quedarse con el que clasifique mejor
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Preparación de los datos}
+
+\begin{itemize}
+
+\item Para calcular distancias, todas las características deben estar en la \textbf{misma escala} \vspace{0.3cm}
+
+\item Si no, una variable con valores grandes dominaría solo por su escala \vspace{0.3cm}
+
+\item Dos formas de rescalar:
+
+\end{itemize}
+
+\[
+\text{Normalización min-max:}\quad X' = \frac{X - X_{min}}{X_{max}-X_{min}}
+\]
+
+\[
+\text{Estandarización (z-score):}\quad X' = \frac{X - \mu}{\sigma}
+\]
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Preparación de los datos}
+
+\begin{itemize}
+
+\item La \textbf{normalización min-max} deja todos los valores entre 0 y 1 \vspace{0.3cm}
+
+\item La \textbf{estandarización} mide cuántas desviaciones estándar se aleja un valor de la media \vspace{0.3cm}
+
+\item ¿Y las variables nominales? La distancia euclídea no está definida para ellas \vspace{0.3cm}
+
+\item Solución: crear variables \textit{dummy} (si hay $n$ categorías, se crean $n-1$ dummies)
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{kNN: aprendizaje perezoso}
+
+\begin{itemize}
+
+\item A kNN se le llama un algoritmo \textbf{perezoso} (\textit{lazy}) \vspace{0.3cm}
+
+\item No hay abstracción: no se construye un modelo, solo se almacenan los datos \vspace{0.3cm}
+
+\item Es una técnica \textbf{no paramétrica}: no supone una forma funcional \vspace{0.3cm}
+
+\item Ventaja: flexible. Desventaja: no entendemos cómo se relacionan las variables con el \textit{outcome} \vspace{0.3cm}
+
+\item \textbf{Al taller}: diagnóstico de cáncer de seno con la base \texttt{wisc\_bc\_data.csv}
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%   PARTE 3: NAIVE BAYES   %%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+\begin{center}
+{\Huge \textbf{Parte 3}}\\[0.5cm]
+{\large Aprendizaje probabilístico: Naive Bayes}
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Pronósticos probabilísticos}
+
+\begin{itemize}
+
+\item A veces la economía se parece más a la meteorología que a la física \vspace{0.3cm}
+
+\item Un meteorólogo no dice ``va a llover''; dice ``hay 70\% de probabilidad de lluvia'' \vspace{0.3cm}
+
+\item Basa su pronóstico en eventos pasados \vspace{0.3cm}
+
+\item El método de hoy hace justamente eso: pronostica de manera \textbf{probabilística} \vspace{0.3cm}
+
+\item Usa datos del pasado para anticipar eventos cuyo estado desconocemos
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Naive Bayes}
+
+\begin{itemize}
+
+\item El algoritmo \textbf{Naive Bayes} se basa en el \textbf{teorema de Bayes} \vspace{0.3cm}
+
+\item Usa datos de entrenamiento para calcular la probabilidad de un resultado \vspace{0.3cm}
+
+\item Esa probabilidad depende de las características del objeto a clasificar \vspace{0.3cm}
+
+\item Se aplica mucho en:
+\begin{itemize}
+\item Clasificación de textos (filtros de spam)
+\item Detección de anomalías o intrusiones en redes
+\item Diagnóstico médico a partir de síntomas
+\end{itemize}
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Un poco de probabilidad}
+
+\begin{itemize}
+
+\item Sea $P(A)$ la probabilidad de que ocurra el evento $A$ \vspace{0.3cm}
+
+\item Su complemento $\neg A$ es la no ocurrencia de $A$, con $P(\neg A)=1-P(A)$ \vspace{0.3cm}
+
+\item Dos eventos son \textbf{independientes} si la ocurrencia de uno no informa sobre el otro: $P(A\cap B)=P(A)\cdot P(B)$ \vspace{0.3cm}
+
+\item Pero los casos interesantes son los \textbf{dependientes}: ahí un evento sí nos dice algo del otro
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Spam y la palabra ``Viagra''}
+
+¿Qué nos dice sobre la probabilidad de spam el que un correo contenga ``Viagra''?
+
+\begin{figure}
+\includegraphics[scale=0.9]{viagra.pdf}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{El teorema de Bayes}
+
+\begin{itemize}
+
+\item La probabilidad condicional de $A$ dado $B$ es:
+
+\[
+P(A\mid B) = \frac{P(A\cap B)}{P(B)}
+\]
+
+\item Reorganizando ($P(A\cap B)=P(B\mid A)\cdot P(A)$), llegamos a la forma más útil:
+
+\[
+P(A\mid B) = \frac{P(B\mid A)\cdot P(A)}{P(B)}
+\]
+
+\item Nos permite ``actualizar nuestra creencia'' sobre $A$ al observar $B$
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Ejemplo: spam y Viagra}
+
+\[
+P(\text{spam}\mid \text{Viagra})=\frac{P(\text{Viagra}\mid \text{spam})\cdot P(\text{spam})}{P(\text{Viagra})}
+\]
+
+\vspace{0.3cm}
+
+\begin{itemize}
+\item $P(\text{spam}\mid \text{Viagra})$: probabilidad \textit{posterior} \vspace{0.2cm}
+\item $P(\text{spam})$: probabilidad \textit{a priori} \vspace{0.2cm}
+\item $P(\text{Viagra}\mid \text{spam})$: \textit{verosimilitud} (likelihood) \vspace{0.2cm}
+\item $P(\text{Viagra})$: verosimilitud marginal
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Ejemplo: spam y Viagra}
+
+Con una tabla de frecuencias de 100 correos:
+
+\begin{figure}
+\includegraphics[scale=0.7]{freqtable.pdf}
+\end{figure}
+
+\begin{itemize}
+\item $P(\text{spam})=20/100=0.2$;\; $P(\text{Viagra}\mid \text{spam})=4/20=0.2$;\; $P(\text{Viagra})=5/100=0.05$
+\item Entonces $P(\text{spam}\mid \text{Viagra})=\dfrac{0.2\cdot 0.2}{0.05}=0.8$
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{¿Por qué ``naive'' (ingenuo)?}
+
+\begin{itemize}
+
+\item Un filtro real usa muchas palabras, no una sola \vspace{0.3cm}
+
+\item Naive Bayes hace dos supuestos ``ingenuos'' sobre las características: \vspace{0.3cm}
+
+\begin{itemize}
+\item[1.] Que todas son \textbf{igual de importantes}
+\item[2.] Que son \textbf{independientes} entre sí
+\end{itemize}
+\vspace{0.3cm}
+
+\item Sabemos que rara vez es cierto (``Viagra'', ``droga'' y ``prescripción'' suelen ir juntas) \vspace{0.3cm}
+
+\item Pero aun así el método \textbf{funciona muy bien} y suele ser el primer candidato
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Varias características a la vez}
+
+\begin{itemize}
+\item El supuesto de independencia simplifica enormemente el cálculo \vspace{0.3cm}
+\item Con cuatro palabras $W_1,\ldots,W_4$, la verosimilitud conjunta se factoriza:
+\end{itemize}
+
+\footnotesize
+\begin{align*}
+&P(\text{spam}\mid W_1\cap \neg W_2 \cap \neg W_3 \cap W_4)\;\propto\\
+&\quad P(W_1\mid \text{spam})\cdot P(\neg W_2\mid \text{spam}) \cdot P(\neg W_3\mid \text{spam}) \cdot P(W_4\mid \text{spam}) \cdot P(\text{spam})
+\end{align*}
+\normalsize
+
+\begin{itemize}
+\item Cada término sale de la tabla de frecuencias: un producto de proporciones simples
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{El estimador de Laplace}
+
+\begin{itemize}
+
+\item ¿Qué pasa si una palabra aparece \textbf{0 veces} en una clase? \vspace{0.3cm}
+
+\item Todo el producto se vuelve 0, y la probabilidad posterior también \vspace{0.3cm}
+
+\item Eso no tiene sentido si las demás palabras sí apuntan a spam \vspace{0.3cm}
+
+\item \textbf{Solución (Laplace)}: sumar 1 a cada conteo de la tabla de frecuencias \vspace{0.3cm}
+
+\item Así evitamos los ceros y el método se vuelve más robusto
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Características numéricas}
+
+\begin{itemize}
+
+\item Hasta aquí las características eran dicotómicas (la palabra está o no está) \vspace{0.3cm}
+
+\item ¿Y si una característica es numérica? Por ejemplo, la hora de envío del correo \vspace{0.3cm}
+
+\item Estrategia: \textbf{discretizar} la variable en categorías razonables \vspace{0.3cm}
+
+\item Por ejemplo, dividir el día en franjas (madrugada, mañana, tarde, noche) \vspace{0.3cm}
+
+\item \textbf{Al taller}: predecir el partido de legisladores de EE.UU. con la base \texttt{votos84.csv}
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Resumen de la sesión}
+
+\begin{itemize}
+
+\item El \textbf{machine learning} transforma datos en acción inteligente; aquí nos interesa \textbf{predecir} \vspace{0.3cm}
+
+\item \textbf{KNN}: clasifica según los vecinos más cercanos. Simple, no paramétrico, sensible a la escala y a k \vspace{0.3cm}
+
+\item \textbf{Naive Bayes}: clasifica de forma probabilística con el teorema de Bayes y un supuesto de independencia \vspace{0.3cm}
+
+\item Ambos son \textbf{clasificadores}: predicen una categoría \vspace{0.3cm}
+
+\item En la próxima sesión: SVM, árboles de decisión y random forests
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{document}

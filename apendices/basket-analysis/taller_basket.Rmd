@@ -1,0 +1,484 @@
+---
+title: "Análisis de Canastas de Mercado en R"
+output:
+ html_notebook: default
+---
+
+> **Nota:** este taller usa el paquete `arules`. Si no lo tienes instalado, ejecuta una vez la celda de abajo. (No se pudo ejecutar automáticamente en el equipo de preparación porque `arules` no estaba instalado.)
+
+```{r, eval=FALSE}
+install.packages("arules")
+```
+
+\
+
+
+# 1. Introducción
+
+\
+
+
+- Aprenderemos a encontrar reglas y patrones usando R
+
+- Usaremos el algoritmo Apriori
+
+- Recordemos que la clave es el proceso iterativo
+
+- Para cada ítem evaluamos su soporte
+
+- Con eso determinamos si es frecuente o no, descartando a los poco frecuentes
+
+- En la segunda iteración formamos itemsets de dos elementos, solo con los que sobrevivieron a la primera ronda
+
+- Y evaluamos su soporte
+
+- Así sucesivamente hasta interrumpir el proceso
+
+- Con los itemsets sobrevivientes, formamos reglas de asociación
+
+- A cada una le calculamos su medida de confianza
+
+- Aceptamos las que superen cierto umbral
+
+- Analizamos las que queden para clasificarlas y ver cuáles nos resultan útiles
+
+
+\
+
+
+
+# 2. Estructura de los Datos
+
+
+\
+
+
+- Trabajaremos con datos reales de un supermercado de tamano medio
+
+- Tenemos 9835 transacciones de un mes de operaciones (aprox. 327 por día)
+
+- No distinguiremos entre marcas o variedades de un mismo producto
+
+- Esto para simplificar el análisis
+
+- Así, usamos categorías amplias como leche, huevos, detergente, etc.
+
+- Al final, quedan 169 productos en total
+
+- Qué tipo de productos se compran conjuntamente?
+
+- Trabajaremos con el archivo `groceries.csv`
+
+- Pero la forma de analizar los datos cambia radicamente respecto a lo que hemos hecho
+
+- No usaremos un data frame convencional
+
+- Eso sería ineficiente
+
+- Porque de hecho la base tiene transacciones en sus filas
+
+- Y un listado de los ítemas adquiridos en cada una
+
+- Luego las columnas no tienen lógica en este caso
+
+- En cambio, usaremos una sparse matrix
+
+- Las filas son transacciones
+
+- Las columnas identifican a cada producto
+
+- E indican si en dicha transacción se adquirió dicho producto o no
+
+- Por tanto, es una matriz con muchos 0's. Por eso se le llama sparse matrix
+
+- En este caso, la matriz tiene 169 columnas
+
+- Las sparse matrices son eficientes porque el sistema no almacena toda la matriz. Solo las casillas donde hay un elemento
+
+
+\
+
+
+# 3. Lectura de los Datos
+
+
+\
+
+
+- Para hacer el análisis usaremos el paquete `arules` de R. No olviden instalarlo con `install.packages("arules")`. 
+
+- Carguémoslo:
+
+
+\
+
+
+```{r}
+library(arules)
+```
+
+
+\
+
+
+- No olviden fijar su directorio de trabajo
+
+- Como no lo leeremos de una manera convencional, no usamos la función `read.csv()` como es tradición
+
+- En su lugar, usamos `read.transactions()` que es para crear la sparse matrix
+
+- Llamemos `groceries` a dicho objeto
+
+
+\
+
+
+```{r}
+groceries <- read.transactions("data/groceries.csv", sep=",")
+```
+
+
+\
+
+
+- Con el parámetro `sep` especificamos que los artículos en una transacción están separados por una coma
+
+- La función `summary()` nos describe la matriz
+
+
+\
+
+
+```{r}
+summary(groceries)
+```
+
+
+\
+
+
+- Tenemos 9835 transacciones y 168 productos
+
+- La densidad de 0.026 significa que el 2.6% de las celdas de la matriz no son ceros 
+
+- La leche es el producto más frecuente
+
+- 2159 transacciones son de un solo ítem; 1643 de 2; y así sucesivamente
+
+- Una transacción tuvo 32 ítems
+
+- En promedio tienen 4.4 ítems, con mediana de 3
+
+- Con la función `inspect()` podemos inspeccionar la matriz
+
+- Por ejemplo, podemos ver las primeras 5 transacciones de la matriz:
+
+\
+
+
+```{r}
+inspect(groceries[1:5])
+```
+
+
+\
+
+
+- Esto es lo que compraron estos 5 clientes
+
+- Con la función `itemFrequency()` podemos ver la frecuencia de los ítems
+
+- Es cuestión de especificar las columnas que nos interesan:
+
+- Por ejemplo, para los tres primeros ítems escribimos:
+
+
+\
+
+
+```{r}
+itemFrequency(groceries[ , 1:3])
+```
+
+
+\
+
+
+- Esta es la proporción de transacciones que contienen cada producto
+
+
+\
+
+
+# 4. Visualización de los datos
+
+
+\
+
+
+- Con `itemFrequencyPlot()` podemos graficar la frecuencia de los ítems
+
+- Por ejemplo, los productos que están en al menos 10% de las transacciones:
+
+
+\
+
+
+```{r}
+itemFrequencyPlot(groceries, support=0.1)
+```
+
+\
+
+
+- La leche entera es el producto más frecuente, con casi el 25%
+
+
+- También podemos elegir graficar los 20 más frecuentes, por ejemplo:
+
+\
+
+
+```{r}
+itemFrequencyPlot(groceries, topN=20)
+```
+
+
+\
+
+
+
+- Es posible ver la matriz como tal
+
+- Verla toda no es muy práctico porque es muy grande
+
+- Pero podemos ver las primeras 10 transacciones, por ejemplo:
+
+
+\
+
+```{r}
+image(groceries[1:10])
+```
+
+\
+
+
+- Cada fila es una transacción
+
+- Cada punto es un producto que se encuentra en la correspondiente transacción
+
+- En algunos casos esto puede servir para detectar patrones
+
+- Aunque por lo general es difícil de leer
+
+\
+
+
+```{r}
+image(groceries[1:100])
+```
+
+
+\
+
+
+- Es bien claro porque se llama sparse matrix
+
+- Las columnas muy pobladas son los productos populares en esta tienda
+
+
+\
+
+
+# 5. Entrenamiento del Modelo
+
+
+\
+
+
+
+- Siempre es muy importante inspeccionar primero los datos
+
+- Ahora sí podemos empezar a buscar reglas de asociación
+
+- Usaremos el algoritmos Apriori, que hemos venido estudiando
+
+- Esto lo hacemos con la función `apriori()` en el paquete `arules`
+
+- La sintaxis es la siguiente: 
+
+\
+
+
+`myrules <- apriori(data=mydata, parameter=list(support=0.1, confidence=0.8, minlen=1)`
+
+
+\
+
+
+- donde `data` son los datos a usar
+
+- Y especificamos nuestras medidas de interés
+
+- `support` es el soporte mínimo de los itemsets. El default es 0.1
+
+- `confidence` es la confianza mínima de las reglas. El default es 0.8
+
+- `minlen` es el tamano mínimo de las reglas. El el número de ítems a los lados izquierdo y derecho de la regla. El default es 1
+
+- Cómo elegimos `support` y `confidence`?
+
+- Es un tanto ad hoc. Mezcla de intuición, lógica y ensayo y error
+
+- Hay trade offs de bajar o subir estos parámetros
+
+- No queremos demasiadas reglas; pero tampoco descartar algunas interesantes
+
+- Arrancaremos con un umbral de 0.25 para la medida de confianza
+
+- O sea que como mínimo, para ser incluida en los resultados, la regla debe ser correcta el 25% de las veces
+
+- Como soporte usaremos 0.006
+
+- Lo cumplen artículos comprados 60 veces (60/9835). Eso significa artículos comprados dos veces al día durante un mes
+
+- Cifras razonables
+
+- Por último, fijaremos `minlen=2`. Reglas de tamano mínimo 2
+
+- Excluímos reglas tipo $\{\}\rightarrow \{\text{whole \ milk}\}$
+
+
+- Así, el comando total es:
+
+
+\
+
+
+```{r}
+groceryrules <- apriori(groceries, parameter = list(support=0.006, confidence=0.25, minlen=2 ))
+```
+
+
+\
+
+
+- Veamos qué se produjo
+
+
+\
+
+
+
+```{r}
+groceryrules
+```
+
+
+\
+
+
+- Un conjunto de 463 reglas
+
+
+\
+
+
+# 6. Análisis de las reglas
+
+
+\
+
+
+- Veamos un resumen de las reglas
+
+
+\
+
+
+```{r}
+summary(groceryrules)
+```
+
+
+\
+
+
+- 150 reglas tienen 2 productos; 297 tienen 3; 16 tienen 4
+
+- La mediana es 3
+
+- En promedio, las reglas tienen soporte 0.01
+
+- Y confianza de 0.38
+
+- Queremos confianza alta en las reglas
+
+- Olvidémonos por el momento del lift
+
+- Podemos ver algunas reglas en específico con la función `inspect()`:
+
+
+\
+
+
+
+
+```{r}
+inspect(groceryrules[1:3])
+```
+
+
+
+\
+
+
+- Quien compra plantas, compra leche. Con confianza del 40%
+
+- Quien compra pasta, compra leche. Con confianza del 41%
+
+- Quien compra hierbas, compra vegetales de raíz. Con confianza del 43%
+
+- Podemos ordenar las reglas de acuerdo con las métricas que construimos. Por ejemplo, su lift:
+
+\
+
+
+```{r}
+inspect(sort(groceryrules, by = "lift")[1:5])
+```
+
+
+\
+
+- Estas son las cinco reglas con mayor lift
+
+- Son notablemente más interesantes
+
+- El siguiente paso es categorizar las reglas
+
+- Recordemos nuestras tres categorías:
+
+
+\
+
+
+
+1. Accionable
+
+2. Triviales
+
+3. Inexplicables
+
+
+\
+
+
+- Esta etapa es análitica. Se usa el sentido común
+
+
+\
+
+
+

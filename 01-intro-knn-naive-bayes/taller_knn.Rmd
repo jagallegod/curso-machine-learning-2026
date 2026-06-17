@@ -1,0 +1,470 @@
+---
+title: "Clasificación con vecinos más cercanos (kNN)"
+output:
+ html_notebook: default
+---
+
+# 1. Introducción
+
+\
+
+- Vimos que el algoritmo kNN sirve para hacer clasificación.
+
+- Partimos de un *outcome* de interés.
+
+- Que corresponde a una variable categórica: por ejemplo, si un correo es spam o no.
+
+- Clasificamos cada caso de acuerdo a otras características.
+
+- Buscando los k vecinos más cercanos.
+
+- Cada caso se asigna a la categoría a la que pertenece la mayoría de sus vecinos.
+
+- Veremos a continuación cómo funciona esto en la práctica.
+
+- Usaremos el algoritmo kNN para el diagnóstico de cáncer de seno.
+
+\
+
+# 2. Diagnóstico de cáncer de seno con el algoritmo kNN
+
+\
+
+- La detección temprana de cáncer de seno se hace examinando el tejido del seno, para buscar bultos o masas anormales.
+
+- Si se encuentra un bulto, se realiza una biopsia en la que se extrae una muestra de tejido por medio de una jeringa.
+
+- La muestra de células se analiza con microscopio para determinar si la masa probablemente es benigna o maligna.
+
+- Con técnicas de machine learning se podría automatizar el proceso de detección de células cancerosas, lo cual sería beneficioso para el sistema de salud.
+
+- Los médicos podrían pasar más tiempo tratando la enfermedad si el proceso de detección se automatiza.
+
+- Además, el proceso automatizado es más eficiente si es capaz de eliminar el componente subjetivo de los humanos.
+
+\
+
+# 3. Datos
+
+\
+
+- Para ilustrar el procedimiento usaremos los datos *Wisconsin Breast Cancer Diagnostic*, de la Universidad de Wisconsin.
+
+- Se incluyen medidas obtenidas de imágenes digitalizadas de masas de seno extraídas con agujas.
+
+- Los valores representan características del núcleo celular presente en las imágenes.
+
+- Los datos incluyen 569 ejemplos de biopsias, cada una con 32 características.
+
+- Se incluye un número de identificación.
+
+- El diagnóstico se codifica como benigno "B" o maligno "M".
+
+- Las restantes 30 características incluyen la media, el error estándar y el valor máximo de 10 características del núcleo celular, como son:
+
+      - Radio
+      - Textura
+      - Perímetro
+      - Área
+      - Suavidad
+      - Compacidad
+      - Concavidad
+      - Puntos cóncavos
+      - Simetría
+      - Dimensión fractal
+
+\
+
+- Para clasificar una muestra como benigna o maligna de acuerdo con sus características, trabajaremos con la base `wisc_bc_data.csv`.
+
+- Importemos la base:
+
+\
+
+```{r}
+wbcd <- read.csv("data/wisc_bc_data.csv", stringsAsFactors = FALSE)
+```
+
+\
+
+- Podemos darle un primer vistazo con la función `str()`:
+
+\
+
+```{r}
+str(wbcd)
+```
+
+\
+
+- También podemos usar la función `head()`:
+
+\
+
+```{r}
+head(wbcd)
+```
+
+\
+
+- Naturalmente, `id` es un identificador que nos dice poco sobre el estatus de la muestra.
+
+- Debemos excluir dicha variable del modelo. Redefinimos `wbcd` excluyendo su primera columna:
+
+\
+
+```{r}
+wbcd <- wbcd[-1]
+```
+
+\
+
+- El *outcome* de interés es `diagnosis`. Es el que queremos predecir. Exploremos esta variable con la función `table()`:
+
+\
+
+```{r}
+table(wbcd$diagnosis)
+```
+
+\
+
+- De los 569 casos, 357 son benignos frente a 212 malignos.
+
+- Muchos algoritmos requieren que la característica de interés sea un factor. Codifiquemos `diagnosis` con tal propósito:
+
+\
+
+```{r}
+wbcd$diagnosis <- factor(wbcd$diagnosis, levels = c("B", "M"), labels = c("Benigno", "Maligno"))
+```
+
+\
+
+- Con la función `prop.table()` obtenemos la proporción de cada caso:
+
+\
+
+```{r}
+round(prop.table(table(wbcd$diagnosis)) * 100, digits = 1)
+```
+
+\
+
+- Las demás variables son numéricas. Las podemos explorar con `summary()`:
+
+\
+
+```{r}
+summary(wbcd[2:31])
+```
+
+\
+
+- Claramente, las variables están en escalas diferentes. Deben rescalarse para hacerlas comparables.
+
+\
+
+# 4. Normalización de los datos
+
+\
+
+- Recordemos que hay dos métodos para rescalar los datos:
+
+    - Normalización min-max
+    - Estandarización
+
+\
+
+- Veamos el caso de la normalización min-max.
+
+- Creemos una función que nos permita normalizar los datos:
+
+\
+
+```{r}
+normalize <- function(x) {
+  return((x - min(x)) / (max(x) - min(x)))
+}
+```
+
+\
+
+- Probemos la función con el vector `c(1, 2, 3, 4, 5)`:
+
+\
+
+```{r}
+normalize(c(1, 2, 3, 4, 5))
+```
+
+\
+
+- Funciona. Ahora apliquemos este procedimiento a las variables numéricas de `wbcd`.
+
+- No tenemos que hacerlo una por una. Podemos usar la función `lapply()`, que aplica una función a cada elemento de una lista.
+
+- Adicionalmente, le pedimos a R que el resultado de `lapply()` sea convertido en un *data frame* con la función `as.data.frame()`:
+
+\
+
+```{r}
+wbcd_n <- as.data.frame(lapply(wbcd[2:31], normalize))
+```
+
+\
+
+- Así, sobre cada una de las columnas 2 a 31 se aplicó la función `normalize`, el resultado se convierte en un *data frame* y lo guardamos bajo el nombre `wbcd_n`.
+
+- Podemos verificar si efectivamente se llevó a cabo la normalización:
+
+\
+
+```{r}
+summary(wbcd_n)
+```
+
+\
+
+- Ahora sí están en la misma escala. Todas están entre 0 y 1.
+
+\
+
+# 5. Bases de entrenamiento y prueba
+
+\
+
+- Bajo el método kNN una fracción de los datos se usa para entrenar el modelo, y el resto para probarlo.
+
+- Tenemos 569 observaciones. Usaremos las primeras 469 para entrenar el modelo y lo pondremos a prueba con las 100 restantes.
+
+- Creemos la base de entrenamiento:
+
+\
+
+```{r}
+wbcd_train <- wbcd_n[1:469, ]
+```
+
+\
+
+- Y la de prueba:
+
+\
+
+```{r}
+wbcd_test <- wbcd_n[470:569, ]
+```
+
+\
+
+- Recordemos que `wbcd_n` excluye nuestra variable de interés, `diagnosis`. Debemos separar las observaciones de esta variable para la base de entrenamiento y la de prueba:
+
+\
+
+```{r}
+wbcd_train_labels <- wbcd[1:469, 1]
+wbcd_test_labels <- wbcd[470:569, 1]
+```
+
+\
+
+- Así, hemos creado dos vectores con los diagnósticos para los ejemplos en la base de entrenamiento y la de prueba.
+
+\
+
+# 6. Entrenamiento del modelo
+
+\
+
+- En realidad, bajo kNN no tenemos un modelo paramétrico.
+
+- Por eso lo llamamos aprendizaje perezoso.
+
+- Lo único que debemos hacer es almacenar los datos de entrada de manera estructurada.
+
+- Para hacer este procedimiento usamos el paquete `class`, que reúne funciones para hacer clasificación.
+
+- Si no lo tienes instalado, descoméntalo y ejecútalo una sola vez:
+
+\
+
+```{r, eval=FALSE}
+install.packages("class")
+```
+
+\
+
+- Y lo cargamos:
+
+\
+
+```{r}
+library(class)
+```
+
+\
+
+- Dentro del paquete `class`, la función `knn()` implementa el algoritmo kNN.
+
+- Para cada caso de los datos de prueba, identifica los k vecinos más cercanos del conjunto de entrenamiento. Esto se hace calculando las distancias euclídeas.
+
+- La clase asignada a cada caso es la de la mayoría de sus k vecinos. En caso de empate, se decide aleatoriamente.
+
+- En la función debemos especificar la base de entrenamiento, la de prueba, el vector de clase y el número de vecinos k. La sintaxis es de la forma:
+
+\
+
+`p <- knn(train, test, cl, k)`
+
+\
+
+- En nuestro caso ya definimos las bases de entrenamiento y prueba, y el vector de clase. Falta definir k.
+
+- Si usamos la heurística más utilizada: $k = \sqrt{469} \approx 21$. Aproximamos a 21 para tener un número impar y reducir la probabilidad de empate.
+
+- Con esto podemos implementar la función:
+
+\
+
+```{r}
+wbcd_test_pred <- knn(train = wbcd_train, test = wbcd_test, cl = wbcd_train_labels, k = 21)
+```
+
+\
+
+- La función `knn()` crea un vector de predicciones de la clase a la que pertenece cada caso del conjunto de prueba:
+
+\
+
+```{r}
+wbcd_test_pred
+```
+
+\
+
+# 7. Evaluación del desempeño del modelo
+
+\
+
+- ¿Qué tan preciso es nuestro modelo?
+
+- La ventaja de lo que acabamos de hacer es que podemos comparar las predicciones del modelo, contenidas en `wbcd_test_pred`, con la clasificación real de cada caso, en `wbcd_test_labels`.
+
+- Para esta comparación usaremos el paquete `gmodels`, que contiene la función `CrossTable()` para tabular los dos vectores.
+
+\
+
+```{r, eval=FALSE}
+install.packages("gmodels")
+```
+
+\
+
+```{r}
+library(gmodels)
+```
+
+\
+
+- Usamos `CrossTable()` para tabular. Desactivamos el parámetro `chisq` porque no nos interesa el estadístico chi-cuadrado:
+
+\
+
+```{r}
+CrossTable(x = wbcd_test_labels, y = wbcd_test_pred, prop.chisq = FALSE)
+```
+
+\
+
+- De los casos realmente benignos, todos fueron correctamente clasificados como benignos: son los *true negatives* (verdaderos negativos).
+
+- De los casos realmente malignos, la mayoría son correctamente clasificados: son los *true positives* (verdaderos positivos).
+
+- Los *falsos positivos* son casos benignos clasificados como malignos: llevan a desperdiciar recursos tratando casos que no son cancerosos.
+
+- Los *falsos negativos* son casos malignos clasificados como benignos: son los más graves, pues pueden llevar a no tratar a quien sí lo necesita.
+
+- En el agregado, el modelo se equivoca en muy pocos casos: una precisión cercana al 98%. Nada mal.
+
+\
+
+# 8. Robustez: estandarización
+
+\
+
+- En el ejercicio anterior rescalamos las variables usando la normalización min-max.
+
+- Una limitación de ese método es que comprime el efecto de los *outliers*.
+
+- En una situación como la de tumores, los *outliers* pueden ser cruciales.
+
+- Por tanto, repliquemos el proceso, pero estandarizando en lugar de normalizando.
+
+- La función `scale()` rescala los valores estandarizándolos (calculando los *z-scores*). Además, se aplica directamente a todo el *data frame*, así que no necesitamos `lapply()`:
+
+\
+
+```{r}
+wbcd_z <- as.data.frame(scale(wbcd[-1]))
+```
+
+\
+
+- Podemos verificar el proceso:
+
+\
+
+```{r}
+summary(wbcd_z)
+```
+
+\
+
+- En efecto, la media es 0.
+
+- Ahora replicamos el proceso anterior. Dividimos la base en entrenamiento y prueba:
+
+\
+
+```{r}
+wbcd_train <- wbcd_z[1:469, ]
+wbcd_test <- wbcd_z[470:569, ]
+```
+
+\
+
+- Y los vectores del *outcome* de interés:
+
+\
+
+```{r}
+wbcd_train_labels <- wbcd[1:469, 1]
+wbcd_test_labels <- wbcd[470:569, 1]
+```
+
+\
+
+- Corremos el modelo con la función `knn()`:
+
+\
+
+```{r}
+wbcd_test_pred <- knn(train = wbcd_train, test = wbcd_test, cl = wbcd_train_labels, k = 21)
+```
+
+\
+
+- Y creamos la tabla para ver la precisión del modelo:
+
+\
+
+```{r}
+CrossTable(x = wbcd_test_labels, y = wbcd_test_pred, prop.chisq = FALSE)
+```
+
+\
+
+- La precisión del modelo es muy similar a la anterior.
+
+- En este ejemplo, normalizar y estandarizar dan resultados parecidos; en otros contextos la diferencia puede ser importante, y conviene probar ambos.

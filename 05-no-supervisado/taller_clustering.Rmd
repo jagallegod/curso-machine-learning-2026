@@ -1,0 +1,164 @@
+---
+title: "Clustering con k-medias en R"
+output:
+ html_notebook: default
+---
+
+# 1. Introducción
+
+\
+
+- Con el clustering buscamos formar grupos de objetos relativamente homogéneos.
+
+- Es un proceso de aprendizaje **no supervisado**: no especificamos ex ante a qué categorías pueden pertenecer los objetos.
+
+- Es la máquina la encargada de encontrar esos grupos relevantes.
+
+- Existen varias técnicas; aquí implementaremos el algoritmo **k-means** en R.
+
+\
+
+# 2. Datos
+
+\
+
+- Trabajaremos con datos de una red social: los perfiles de 30.000 estudiantes de secundaria.
+
+- La base indica la frecuencia con la que aparecen ciertas palabras en cada perfil, además de algunas características sociodemográficas.
+
+- Leamos la base `teens.csv`, que ya viene preprocesada para el algoritmo:
+
+\
+
+```{r}
+teens <- read.csv("data/teens.csv")
+str(teens)
+```
+
+\
+
+- Son 30.000 observaciones y 42 variables. Nos interesan las **frecuencias de palabras** (los intereses), que están en las columnas 5 a 40. Acotemos el *data frame* a esas columnas:
+
+\
+
+```{r}
+interests <- teens[5:40]
+```
+
+\
+
+- Por último, **estandaricemos** los datos para que sean comparables (el clustering se basa en distancias):
+
+\
+
+```{r}
+interests_z <- as.data.frame(lapply(interests, scale))
+```
+
+\
+
+# 3. Implementación del modelo
+
+\
+
+- Usaremos `kmeans()`, con sintaxis `myclusters <- kmeans(mydata, k)`, donde `mydata` son los datos y `k` el número de clusters.
+
+- Fijemos la semilla para poder replicar:
+
+\
+
+```{r}
+set.seed(2345)
+```
+
+\
+
+- Generemos los clusters con `k = 5`, inspirados en *The Breakfast Club* (que sugiere 5 tipos de jóvenes: princesas, cerebros, atletas, casos perdidos y criminales):
+
+\
+
+```{r}
+teen_clusters <- kmeans(interests_z, 5)
+```
+
+\
+
+- Veamos el tamaño de cada cluster:
+
+\
+
+```{r}
+teen_clusters$size
+```
+
+\
+
+- Y los centros (perfil promedio de cada cluster en cada palabra):
+
+\
+
+```{r}
+teen_clusters$centers
+```
+
+\
+
+- Mirando qué palabras tienen valores altos en cada cluster, podemos interpretarlos: p. ej. uno con `cheerleading`, `hollister`, `shopping` (las "princesas"); otro con `band`, `march`, `music` (los músicos); otro con `basketball`, `football`, `soccer` (los deportistas); otro con `die`, `death`, `drugs` (los "criminales"); y un grupo grande poco diferenciado (las "masas").
+
+\
+
+# 4. Análisis adicional
+
+\
+
+- Guardemos la etiqueta de cluster de cada estudiante en la base original:
+
+\
+
+```{r}
+teens$cluster <- teen_clusters$cluster
+```
+
+\
+
+- Veamos, para los primeros estudiantes, su cluster junto a algunas características:
+
+\
+
+```{r}
+teens[1:5, c("cluster", "age", "friends")]
+```
+
+\
+
+- Ahora exploremos cómo se relacionan los clusters con variables que **no** usamos para formarlos. Por ejemplo, la edad promedio por cluster:
+
+\
+
+```{r}
+aggregate(data = teens, age ~ cluster, mean)
+```
+
+\
+
+- La proporción de mujeres por cluster:
+
+\
+
+```{r}
+aggregate(data = teens, female ~ cluster, mean)
+```
+
+\
+
+- Y el número promedio de amigos por cluster:
+
+\
+
+```{r}
+aggregate(data = teens, friends ~ cluster, mean)
+```
+
+\
+
+- Estas asociaciones (que el algoritmo **no** conocía) le dan sentido a los grupos: por ejemplo, ciertos clusters tienden a tener más amigos o una composición de género distinta. Esa interpretación es trabajo del analista.

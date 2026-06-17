@@ -1,0 +1,260 @@
+---
+title: "Bagging y Random Forests en R"
+output:
+ html_notebook: default
+---
+
+# 1. Introducción
+
+\
+
+- El *bagging* y los *random forests* son extensiones de los árboles de decisión.
+
+- Son ejemplos de los **métodos de ensamble**: estimamos varios modelos del mismo tipo y los combinamos para obtener mejores predicciones.
+
+- Aquí construimos varios árboles, cada uno sobre una muestra *bootstrap* distinta de los datos de entrenamiento.
+
+- La diferencia: en *random forests*, en cada nodo de cada árbol usamos solo un **subconjunto** de las características.
+
+- Compararemos los tres métodos (árbol, *bagging*, *random forest*) con un ejemplo bancario: predecir qué clientes aceptan un depósito a plazo tras una llamada de mercadeo. Así el banco enfoca mejor sus recursos.
+
+\
+
+# 2. Datos
+
+\
+
+- Usaremos `bank.csv`, una versión de la base *Bank Marketing* (UCI), de una campaña de mercadeo telefónico de un banco portugués.
+
+- Leemos con `stringsAsFactors = TRUE`. Esto es **importante**: si el *outcome* `y` no fuera un factor, `randomForest` haría regresión en vez de clasificación.
+
+\
+
+```{r}
+bank <- read.csv("data/bank.csv", stringsAsFactors = TRUE)
+```
+
+\
+
+```{r}
+str(bank)
+```
+
+\
+
+- Son 41.188 observaciones y 20 variables. La última, `y`, es el *outcome* (si el cliente adquiere o no el producto):
+
+\
+
+```{r}
+prop.table(table(bank$y))
+```
+
+\
+
+- Cerca del 88.7% no acepta el producto y solo el 11.3% sí: la clase de interés es **minoritaria** (un caso de desbalance, que retomaremos más adelante).
+
+- Siempre conviene conocer las variables:
+
+\
+
+```{r}
+table(bank$marital)
+summary(bank$age)
+table(bank$job)
+```
+
+\
+
+# 3. Árbol de decisión
+
+\
+
+- Compararemos *bagging* y *random forests* contra un árbol de decisión simple (C5.0), como punto de partida:
+
+\
+
+```{r}
+library(C50)
+```
+
+\
+
+- Creamos las bases de entrenamiento (90%) y prueba (10%) de forma aleatoria, fijando la semilla:
+
+\
+
+```{r}
+set.seed(123)
+train_sample <- sample(41188, 37069)
+bank_train <- bank[train_sample, ]
+bank_test  <- bank[-train_sample, ]
+```
+
+\
+
+- Verifiquemos que las proporciones del *outcome* se mantienen tras la aleatorización:
+
+\
+
+```{r}
+prop.table(table(bank_train$y))
+prop.table(table(bank_test$y))
+```
+
+\
+
+- Construyamos el árbol (excluyendo la columna 20, que es el *outcome*):
+
+\
+
+```{r}
+bank_tree <- C5.0(bank_train[-20], bank_train$y)
+bank_tree
+```
+
+\
+
+- Predecimos sobre la base de prueba y evaluamos con `gmodels`:
+
+\
+
+```{r}
+library(gmodels)
+bank_pred_tree <- predict(bank_tree, bank_test)
+CrossTable(bank_test$y, bank_pred_tree, prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
+           dnn = c("Real", "Pronóstico"))
+```
+
+\
+
+- La precisión total es alta (~91%), pero engaña: en los clientes que **sí** adquieren el producto (la clase de interés), el modelo se equivoca en cerca de la mitad. Veamos si mejoramos eso.
+
+\
+
+# 4. Bagging
+
+\
+
+- Bajo *bagging* tomamos muestras *bootstrap* de la base de entrenamiento, construimos un árbol con cada una, y combinamos por regla de la mayoría.
+
+- Lo hacemos con el paquete `randomForest`, porque *bagging* es un caso particular de *random forest*: aquel en que se usan **todas** las características en cada nodo. Si no lo tienes instalado:
+
+\
+
+```{r, eval=FALSE}
+install.packages("randomForest")
+```
+
+\
+
+```{r}
+library(randomForest)
+```
+
+\
+
+- Usamos `randomForest()` excluyendo la columna 20 del *outcome*. Fijamos `mtry = 19` (todas las variables, para que sea *bagging*) e `importance = TRUE` para calcular la importancia de variables. Limitamos a `ntree = 100` árboles: como vimos en clase, las tasas de error se estabilizan antes de 100. Fijamos la semilla para reproducir:
+
+\
+
+```{r}
+set.seed(123)
+bank_bag <- randomForest(x = bank_train[-20], y = bank_train$y,
+                         mtry = 19, ntree = 100, importance = TRUE)
+bank_bag
+```
+
+\
+
+- La matriz de confusión que muestra se basa en las predicciones *out of bag* (OOB): para cada árbol, los casos que no entraron en su muestra *bootstrap*.
+
+- Grafiquemos las tasas de error OOB según el número de árboles:
+
+\
+
+```{r}
+plot(bank_bag, main = "Tasas de error (bagging)")
+```
+
+\
+
+- Se observa que las tasas se estabilizan rápido. La clase minoritaria (clientes que sí adquieren) es la de mayor error.
+
+- Veamos la importancia de las variables (*mean decrease in Gini*: la ganancia de información promedio de cada variable). Estos árboles usan el índice de Gini en lugar de la entropía, pero la intuición es la misma:
+
+\
+
+```{r}
+round(importance(bank_bag, type = 2), 2)
+```
+
+\
+
+```{r}
+varImpPlot(bank_bag, sort = TRUE, type = 2, n.var = 10, main = "Importancia de variables (bagging)")
+```
+
+\
+
+- Predecimos sobre la base de prueba y comparamos:
+
+\
+
+```{r}
+bank_pred_bag <- predict(bank_bag, bank_test)
+CrossTable(bank_test$y, bank_pred_bag, prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
+           dnn = c("real", "pronóstico"))
+```
+
+\
+
+- La mejora respecto al árbol C5.0 es leve: el *bagging* por sí solo no resuelve la dificultad con la clase minoritaria.
+
+\
+
+# 5. Random Forests
+
+\
+
+- ¿Y si usamos *random forests*? La diferencia: en cada nodo se selecciona aleatoriamente un subconjunto de variables (no todas), lo que **decorrelaciona** los árboles.
+
+- Con `randomForest()` no especificamos `mtry`: el valor por defecto es $m=\sqrt{p}$. Mantenemos `ntree = 100` y la semilla:
+
+\
+
+```{r}
+set.seed(123)
+bank_rf <- randomForest(x = bank_train[-20], y = bank_train$y,
+                        ntree = 100, importance = TRUE)
+bank_rf
+```
+
+\
+
+- Evolución de los errores e importancia de variables:
+
+\
+
+```{r}
+plot(bank_rf, main = "Tasas de error (random forest)")
+varImpPlot(bank_rf, sort = TRUE, type = 2, n.var = 10, main = "Importancia de variables (random forest)")
+```
+
+\
+
+- Y las predicciones sobre la base de prueba:
+
+\
+
+```{r}
+bank_pred_rf <- predict(bank_rf, bank_test)
+CrossTable(bank_test$y, bank_pred_rf, prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
+           dnn = c("real", "pronóstico"))
+```
+
+\
+
+- La precisión total se mantiene alta y la decorrelación ayuda, pero la clase minoritaria sigue siendo la más difícil de predecir.
+
+- Esto motiva la sesión de **desempeño de modelos**: cuando hay desbalance de clases, la precisión total no basta y necesitamos otras medidas (sensibilidad, especificidad, etc.) y técnicas específicas.

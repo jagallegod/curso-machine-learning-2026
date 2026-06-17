@@ -1,0 +1,292 @@
+---
+title: "Clasificación con Naive Bayes"
+output:
+ html_notebook: default
+---
+
+# 1. Introducción
+
+\
+
+- Vimos que el algoritmo Naive Bayes clasifica de manera probabilística.
+
+- La probabilidad de que un objeto pertenezca a cierta clase depende de las características que tenga.
+
+- Esto, por medio del cálculo de probabilidades posteriores en función de los datos de entrenamiento.
+
+- Para filtrar correos spam, por ejemplo, las palabras contenidas en el correo determinan la clase a la que pertenece.
+
+- Esto en función de la frecuencia de dichas palabras en correos previamente clasificados como spam o no.
+
+- Aplicaremos esta técnica para asignar legisladores a un partido en función de su comportamiento legislativo.
+
+\
+
+# 2. Predicción del partido político de legisladores en EE.UU.
+
+\
+
+- Usaremos el algoritmo Naive Bayes para predecir el partido político de los legisladores.
+
+- Tenemos información sobre representantes a la Cámara en EE.UU.
+
+- La base `votos84.csv` contiene información sobre un conjunto de representantes a la Cámara en EE.UU. en 1984.
+
+- También contiene información sobre cómo votaron (Sí o No) en un conjunto de 16 proposiciones durante su legislatura.
+
+- La idea es mostrar cómo el comportamiento legislativo permite determinar la ideología y, por ende, el partido de estos congresistas.
+
+\
+
+# 3. Datos
+
+\
+
+- Leamos los datos como un *data frame*.
+
+- Como todas las variables son categóricas (el partido y los 16 votos), las leemos como factores con `stringsAsFactors = TRUE`. Esto es necesario para que Naive Bayes las trate correctamente:
+
+\
+
+```{r}
+votos84 <- read.csv("data/votos84.csv", stringsAsFactors = TRUE)
+```
+
+\
+
+- Veamos la estructura de los datos:
+
+\
+
+```{r}
+str(votos84)
+```
+
+\
+
+- Grafiquemos la proporción de votos por el asunto 1 (`V1`) para el total de legisladores:
+
+\
+
+```{r}
+plot(votos84$V1)
+```
+
+\
+
+- Ahora lo mismo, pero solo para los legisladores republicanos:
+
+\
+
+```{r}
+plot(votos84[votos84$Class == "republican", "V1"])
+```
+
+\
+
+- Y ahora para los demócratas:
+
+\
+
+```{r}
+plot(votos84[votos84$Class == "democrat", "V1"])
+```
+
+\
+
+- Claramente se ven diferencias en el comportamiento legislativo entre los miembros de un partido y del otro.
+
+- Estas son las diferencias que explotaremos.
+
+\
+
+# 4. Preparación de los datos
+
+\
+
+- Dividiremos la base en dos: 335 observaciones para entrenar el modelo y las 100 restantes para probarlo.
+
+- Hacemos esta división de manera aleatoria.
+
+- Para esto creamos un vector de 335 números que pueden tomar cualquier valor entre 1 y 435.
+
+- Esos números serán las observaciones que formarán parte del conjunto de entrenamiento; el resto serán las del conjunto de prueba.
+
+- Fijemos primero una semilla para poder replicar los resultados después.
+
+- Este paso es importante siempre que haya un procedimiento aleatorio de por medio que queramos replicar:
+
+\
+
+```{r}
+set.seed(123)
+```
+
+\
+
+- Creemos un vector de 335 números aleatorios entre 1 y 435:
+
+\
+
+```{r}
+train_sample <- sample(435, 335)
+```
+
+\
+
+- Echémosle un vistazo al vector:
+
+\
+
+```{r}
+str(train_sample)
+```
+
+\
+
+- Cada número es una fila que integrará el conjunto de entrenamiento.
+
+- Creemos las bases de entrenamiento y prueba usando el vector aleatorio que acabamos de crear:
+
+\
+
+```{r}
+votos84_train <- votos84[train_sample, ]
+votos84_test <- votos84[-train_sample, ]
+```
+
+\
+
+- Creemos los vectores con los *outcomes* (la clase de cada legislador):
+
+\
+
+```{r}
+votos84_train_labels <- votos84_train$Class
+votos84_test_labels <- votos84_test$Class
+```
+
+\
+
+- Eliminemos la columna del *outcome* (`Class`) en las bases de entrenamiento y prueba, para dejar solo las características:
+
+\
+
+```{r}
+votos84_train <- votos84_train[, -1]
+votos84_test <- votos84_test[, -1]
+```
+
+\
+
+- Inspeccionemos las bases resultantes:
+
+\
+
+```{r}
+str(votos84_train)
+```
+
+\
+
+# 5. Entrenamiento del modelo
+
+\
+
+- Ahora sí estamos listos para utilizar el algoritmo.
+
+- Con base en el comportamiento legislativo, se estimará la probabilidad de que un congresista sea republicano o demócrata.
+
+- Para esto usaremos el paquete `e1071`, que incluye una variedad de funciones de machine learning, entre ellas una para hacer Naive Bayes.
+
+- Si no lo tienes instalado, descoméntalo y ejecútalo una sola vez:
+
+\
+
+```{r, eval=FALSE}
+install.packages("e1071")
+```
+
+\
+
+```{r}
+library(e1071)
+```
+
+\
+
+- En este paquete los procesos de entrenamiento y predicción se hacen en etapas separadas.
+
+- Para entrenar usamos la función `naiveBayes()`, con la sintaxis: `m <- naiveBayes(train, class, laplace)`, donde:
+
+    - `m` es el nombre que le damos al objeto.
+    - `train` es el *data frame* o matriz con los datos de entrenamiento.
+    - `class` es un vector tipo factor que indica la clase de cada fila de entrenamiento.
+    - `laplace` es el parámetro que controla el estimador de Laplace (por defecto, `laplace = 0`).
+
+- El objeto que devuelve esta función nos sirve para hacer las predicciones.
+
+- Estimemos el modelo con nuestros datos de entrenamiento:
+
+\
+
+```{r}
+votos84_classifier <- naiveBayes(votos84_train, votos84_train_labels)
+```
+
+\
+
+# 6. Predicciones y desempeño del modelo
+
+\
+
+- Predecimos con la función `predict()`, que tiene la sintaxis: `p <- predict(m, test, type)`, donde:
+
+    - `m` es el objeto estimado con `naiveBayes()`.
+    - `test` es el *data frame* o matriz con los datos de prueba.
+    - `type` puede ser `"class"` (devuelve la categoría predicha) o `"raw"` (devuelve la probabilidad). Por defecto es `"class"`.
+
+- La predicción sobre la base de prueba en nuestro ejemplo es:
+
+\
+
+```{r}
+votos84_test_pred <- predict(votos84_classifier, votos84_test)
+```
+
+\
+
+- Veamos cómo nos fue, con la función `CrossTable()` del paquete `gmodels`. Carguemos el paquete:
+
+\
+
+```{r, eval=FALSE}
+install.packages("gmodels")
+```
+
+\
+
+```{r}
+library(gmodels)
+```
+
+\
+
+- Creemos la tabla que compara las predicciones con la clase real:
+
+\
+
+```{r}
+CrossTable(votos84_test_pred, votos84_test_labels, prop.chisq = FALSE,
+           prop.r = FALSE, prop.c = FALSE, dnn = c("predicho", "real"))
+```
+
+\
+
+- En la diagonal de la tabla están los aciertos: legisladores cuyo partido fue correctamente predicho a partir de sus votos.
+
+- Fuera de la diagonal están los errores de clasificación.
+
+- El modelo logra clasificar correctamente a la gran mayoría de los legisladores, lo que confirma que el comportamiento legislativo es muy informativo sobre la afiliación partidista.
+
+- Como ejercicio, prueba a reestimar el modelo con `laplace = 1` y compara los resultados.

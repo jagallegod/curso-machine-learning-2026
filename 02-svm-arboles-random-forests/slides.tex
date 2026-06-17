@@ -1,0 +1,718 @@
+\documentclass{beamer}
+
+\usepackage{soul}
+
+
+\usetheme{Boadilla}
+
+\setbeamersize{text margin left=1cm,text margin right=1cm}
+
+% DEFINITON FOOTLINE
+% here: empty
+\setbeamertemplate{footline}
+{%
+\begin{beamercolorbox}{}
+\end{beamercolorbox}%
+}
+
+
+\usepackage[english]{babel}
+\usepackage[latin1]{inputenc}
+\usepackage{color}
+\usepackage{graphicx}
+\graphicspath{{img/}}
+\usepackage{setspace}
+%\usepackage[pdftex]{graphicx}
+
+%TABELLEN
+\usepackage{array}
+%\usepackage{ctable}		%Tabellen mit Fussoten
+\usepackage{multirow}
+\usepackage{booktabs}
+	% Neue Tabellenbefehle in der array Umgebung
+	\renewcommand{\arraystretch}{1.2} % Zeilenabstand
+	\newcolumntype{C}[1]{>{\centering\let\\\tabularnewline}p{#1}}
+	\newcolumntype{R}[1]{>{\raggedleft\let\\\tabularnewline}p{#1}}
+	\newcolumntype{L}[1]{>{\raggedright\let\\\tabularnewline}p{#1}}
+
+\setbeamercovered{transparent}
+
+
+\title{Clasificación: SVM, Árboles y Random Forests}
+\author{Jorge Gallego}
+\institute{Inter-American Development Bank}
+
+\date{Bogotá Summer School in Economics --- 2026}
+
+\begin{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\frame{\titlepage}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Agenda de la sesión}
+
+\begin{itemize}
+
+\item Seguimos en aprendizaje supervisado: \textbf{clasificación} \vspace{0.3cm}
+
+\item[1.] Support Vector Machines (SVM) \vspace{0.3cm}
+
+\item[2.] Árboles de decisión \vspace{0.3cm}
+
+\item[3.] Bagging y Random Forests \vspace{0.3cm}
+
+\item Pasamos de un clasificador geométrico (SVM) a uno basado en reglas (árboles), y de un árbol a un ``bosque'' de árboles
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%   PARTE 1: SVM   %%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+\begin{center}
+{\Huge \textbf{Parte 1}}\\[0.5cm]
+{\large Support Vector Machines (SVM)}
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Introducción}
+
+\begin{itemize}
+\item Estudiamos un último modelo de aprendizaje supervisado para clasificación \vspace{0.3cm}
+
+\item Muy popular en los últimos años (gana concursos predictivos) \vspace{0.3cm}
+
+\item Combina elementos de \textbf{kNN} (distancias entre objetos) y de \textbf{regresión lineal} (combinaciones lineales de variables) \vspace{0.3cm}
+
+\item Es poderoso, pero es un modelo de ``caja negra'': las matemáticas son complejas, aunque la intuición es simple
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{La intuición}
+
+\begin{itemize}
+\item Se busca crear una \textbf{superficie} que divida el espacio que contiene los objetos a clasificar \vspace{0.3cm}
+
+\item De tal forma que cada partición sea lo más \textbf{homogénea} posible \vspace{0.3cm}
+
+\item Esa superficie, que separa las clases, es un \textbf{hiperplano} \vspace{0.3cm}
+
+\item Algunas aplicaciones: análisis de sentimiento en redes, clasificación genética para predecir enfermedades, categorización de texto, detección de eventos raros
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Clasificación con hiperplanos}
+
+\begin{itemize}
+\item Representamos cada objeto como un \textbf{vector} en un espacio $n$-dimensional (cada característica es una dimensión) \vspace{0.3cm}
+
+\item Un \textbf{hiperplano} es un subespacio de dimensión $n-1$ que divide ese espacio \vspace{0.3cm}
+
+\item En 1D es un punto; en 2D una recta; en 3D un plano; y así sucesivamente \vspace{0.3cm}
+
+\item En general: $a_1x_1 + a_2x_2 + \cdots + a_nx_n = b$, y el espacio se parte según el valor sea mayor o menor que $b$
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Hiperplano en 2 y 3 dimensiones}
+
+\begin{figure}
+\includegraphics[scale=0.85]{hiperplano2D.pdf}
+\hspace{0.5cm}
+\includegraphics[scale=0.85]{hiperplano3D.pdf}
+\end{figure}
+
+\begin{center}
+\small Objetos \textit{linealmente separables}: una recta (o plano) separa las clases
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{¿Cuál hiperplano elegir?}
+
+Hay infinitos hiperplanos que separan; buscamos el ``óptimo''.
+
+\begin{figure}
+\includegraphics[scale=0.9]{hiperplanos.pdf}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Hiperplano de máximo margen}
+
+\begin{itemize}
+\item Elegimos el \textbf{hiperplano de máximo margen} (MMH): el que genera la mayor separación entre las clases \vspace{0.3cm}
+
+\item ¿Por qué? Porque así es más probable que objetos \textbf{futuros} se clasifiquen correctamente \vspace{0.3cm}
+
+\item Los \textbf{vectores de soporte} (\textit{support vectors}) son los puntos de cada clase más cercanos al MMH \vspace{0.3cm}
+
+\item Son ellos los que definen el hiperplano: de ahí el nombre del método
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Vectores de soporte}
+
+\begin{figure}
+\includegraphics[scale=0.9]{support.pdf}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{El problema de optimización}
+
+\begin{itemize}
+\item Definimos el hiperplano como $\mathbf{w}\cdot\mathbf{x}+b=0$, con pesos $\mathbf{w}$ y sesgo $b$ \vspace{0.3cm}
+
+\item Buscamos dos planos paralelos lo más separados posible. La distancia entre ellos es $\frac{2}{||\mathbf{w}||}$ \vspace{0.3cm}
+
+\item Maximizar esa distancia equivale a \textbf{minimizar} $\mathbf{w}$:
+\end{itemize}
+
+\begin{align*}
+&\text{min}\ \ \frac{1}{2}||\mathbf{w}||^2\\
+&\text{s.a.}\ \ y_i(\mathbf{w}\cdot\mathbf{x}_i-b)\geq 1,\ \forall \mathbf{x}_i
+\end{align*}
+
+\begin{center}
+\small ($y_i$ es $+1$ o $-1$; se resuelve con optimización cuadrática)
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Datos que no son linealmente separables}
+
+\begin{itemize}
+\item ¿Y si ninguna recta separa perfectamente las clases? \vspace{0.3cm}
+
+\item Introducimos una \textbf{variable de holgura} $\xi_i$ que permite que algunos puntos caigan del lado equivocado \vspace{0.3cm}
+
+\item Y un \textbf{costo} $C$ que penaliza cada violación:
+\end{itemize}
+
+\begin{align*}
+&\text{min}\ \ \frac{1}{2}||\mathbf{w}||^2 + C\sum_{i=1}^n \xi_i\\
+&\text{s.a.}\ \ y_i(\mathbf{w}\cdot\mathbf{x}_i-b)\geq 1-\xi_i,\ \xi_i\geq 0
+\end{align*}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Datos que no son linealmente separables}
+
+\begin{figure}
+\includegraphics[scale=0.9]{slack.pdf}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{El truco kernel}
+
+\begin{itemize}
+\item Otra forma de manejar la no-linealidad: los \textbf{métodos kernel} \vspace{0.3cm}
+
+\item La idea: transformar el problema a una \textbf{dimensión superior} donde sí haya separación lineal \vspace{0.3cm}
+
+\item Ejemplo: lugares soleados vs. nevados, descritos por latitud y longitud. En 2D no se separan... \vspace{0.3cm}
+
+\item ...pero si añadimos la \textbf{altura} (una nueva característica construida), sí
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{El truco kernel}
+
+\begin{figure}
+\includegraphics[scale=0.75]{kernel.pdf}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Funciones kernel}
+
+\begin{itemize}
+\item Un kernel construye nuevas características a partir de las existentes:
+\[
+K(\mathbf{x}_i, \mathbf{x}_j) = \phi(\mathbf{x}_i)\cdot \phi(\mathbf{x}_j)
+\]
+\vspace{0.1cm}
+
+\item Hay varias: lineal, polinomial, sigmoidal, gaussiana (RBF) \vspace{0.3cm}
+
+\item ¿Cuál usar? En la práctica es mucho ensayo y error: la que mejor ajuste \vspace{0.3cm}
+
+\item \textbf{Al taller}: reconocimiento óptico de letras con la base \texttt{letterdata.csv} (paquete \texttt{kernlab})
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%   PARTE 2: ÁRBOLES   %%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+\begin{center}
+{\Huge \textbf{Parte 2}}\\[0.5cm]
+{\large Árboles de decisión}
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Introducción}
+
+\begin{itemize}
+\item Imaginen que deben elegir qué carro comprar entre varias opciones \vspace{0.3cm}
+
+\item Una heurística típica: ir descartando con reglas simples \vspace{0.3cm}
+
+\begin{itemize}
+\item ``Si es sedán, descartado''
+\item ``Si vale más de 50 millones, descartado''
+\end{itemize}
+\vspace{0.3cm}
+
+\item Así, una decisión compleja se simplifica con reglas encadenadas \vspace{0.3cm}
+
+\item Esa es la idea de los \textbf{árboles de decisión}: decisiones complejas a partir de reglas simples
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Estructura de un árbol}
+
+\begin{itemize}
+\item Arrancamos con un \textbf{tronco} que incluye todos los casos \vspace{0.2cm}
+\item Creamos \textbf{ramas} según las características de interés \vspace{0.2cm}
+\item Hasta llegar a las \textbf{hojas}: la clase predicha
+\end{itemize}
+
+\begin{figure}
+\includegraphics[scale=0.7]{tree.pdf}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{¿Por qué son tan populares?}
+
+\begin{itemize}
+\item Tienen nodo \textbf{raíz}, nodos de \textbf{decisión} y nodos \textbf{hoja} \vspace{0.3cm}
+
+\item Gran ventaja: el resultado se presenta de forma \textbf{amigable e interpretable} \vspace{0.3cm}
+
+\item Útil cuando hay que \textbf{justificar} una decisión (p. ej., negar un crédito sin sesgo y documentado) \vspace{0.3cm}
+
+\item Aplicaciones: \textit{score} crediticio, marketing y satisfacción del consumidor, diagnóstico médico
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Divide y triunfarás}
+
+\begin{itemize}
+\item Los árboles se basan en el principio de \textbf{partición} (divide y triunfarás) \vspace{0.3cm}
+
+\item Se dividen los datos en subconjuntos, y estos en subconjuntos más pequeños \vspace{0.3cm}
+
+\item Hasta que cada subconjunto sea suficientemente \textbf{homogéneo} \vspace{0.3cm}
+
+\item Ejemplo: un estudio de Hollywood quiere predecir si un guion será éxito de crítica, éxito de taquilla o fracaso, según su presupuesto y su número de celebridades
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Ejemplo: clasificar guiones}
+
+\begin{itemize}
+\item Primero dividimos según el \textbf{número de celebridades}:
+\end{itemize}
+
+\begin{figure}
+\includegraphics[scale=0.8]{split1.pdf}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Ejemplo: clasificar guiones}
+
+\begin{itemize}
+\item Entre los de muchas celebridades, dividimos según el \textbf{presupuesto}:
+\end{itemize}
+
+\begin{figure}
+\includegraphics[scale=0.8]{split2.pdf}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Ejemplo: el árbol resultante}
+
+\begin{figure}
+\includegraphics[scale=0.8]{tree2.pdf}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{El algoritmo C5.0}
+
+\begin{itemize}
+\item Hay varias formas de construir árboles; la más usada es \textbf{C5.0} (estándar en la industria) \vspace{0.3cm}
+
+\item Fortalezas: buen desempeño casi siempre, maneja variables numéricas y categóricas y datos ausentes, excluye variables irrelevantes, y produce un modelo interpretable \vspace{0.3cm}
+
+\item Debilidades: sesgo hacia variables con muchos niveles, riesgo de sobre/subajuste, sensibilidad a pequeños cambios en los datos
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{¿Cómo dividir de la mejor forma?}
+
+\begin{itemize}
+\item ¿Por cuál característica empezar a dividir? Buscamos maximizar la \textbf{pureza} \vspace{0.3cm}
+
+\item Un subconjunto es \textbf{puro} si contiene una única clase \vspace{0.3cm}
+
+\item La medida más usada es el \textbf{índice de entropía}:
+\[
+Entropia(S) = \sum_{i=1}^c -p_i \log_2(p_i)
+\]
+
+\item A mayor entropía, más heterogeneidad. Buscamos \textbf{minimizarla}
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Entropía: ejemplo}
+
+\begin{itemize}
+\item Con dos clases, Rojo ($p_1=0.6$) y Blanco ($p_2=0.4$):
+\[
+Entropia(S) = -0.6\log_2(0.6) - 0.4\log_2(0.4) = 0.97
+\]
+poca homogeneidad (entropía alta).
+\end{itemize}
+
+\begin{figure}
+\includegraphics[scale=0.85]{entropy.pdf}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Ganancia de información}
+
+\begin{itemize}
+\item Elegimos la división que más reduzca la entropía: la de mayor \textbf{ganancia de información}
+\[
+InfoGain(F) = Entropia(S_{antes}) - Entropia(S_{despues})
+\]
+
+\item La entropía después de dividir es el promedio ponderado de las entropías de cada grupo:
+\[
+Entropia(S_{despues}) = \sum_{i=1}^n w_i\, Entropia(p_i)
+\]
+
+\item En el ejemplo, conviene dividir primero por número de celebridades: deja grupos casi puros
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{¿Cuándo parar?}
+
+\begin{itemize}
+\item Seguir dividiendo indefinidamente lleva a \textbf{overfitting}: reglas inútiles para predecir fuera de la muestra \vspace{0.3cm}
+
+\item Por eso se \textbf{poda} el árbol: \vspace{0.3cm}
+
+\begin{itemize}
+\item \textbf{Pre-poda}: fijar de antemano un máximo de divisiones o de ejemplos por nodo
+\item \textbf{Post-poda}: dejar crecer el árbol y luego recortar lo innecesario
+\end{itemize}
+\vspace{0.3cm}
+
+\item \textbf{Al taller}: predicción de \textit{default} crediticio con la base \texttt{credit.csv} (paquete \texttt{C50})
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%   PARTE 3: RANDOM FORESTS   %%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+\begin{center}
+{\Huge \textbf{Parte 3}}\\[0.5cm]
+{\large Bagging y Random Forests}
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{El problema de los árboles}
+
+\begin{itemize}
+\item Los árboles son poderosos, flexibles e interpretables \vspace{0.3cm}
+
+\item Pero tienen \textbf{alta varianza}: pequeños cambios en los datos de entrenamiento producen árboles muy distintos \vspace{0.3cm}
+
+\item Esto limita su precisión fuera de la muestra (lo vimos con el \textit{default} crediticio) \vspace{0.3cm}
+
+\item Veremos dos técnicas que, partiendo de árboles, reducen la varianza: \textbf{bagging} y \textbf{random forests}
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Bootstrapping}
+
+\begin{itemize}
+\item Primero, una idea estadística: el \textbf{bootstrapping} \vspace{0.3cm}
+
+\item Consiste en obtener muestras aleatorias \textbf{con reemplazo} de los datos \vspace{0.3cm}
+
+\item A partir de esas muestras repetidas calculamos algún estadístico \vspace{0.3cm}
+
+\item Es muy útil cuando hacerlo directamente es difícil o imposible
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Bagging}
+
+\begin{itemize}
+\item Promediar reduce la varianza: si $Z_1,\ldots,Z_n$ tienen varianza $\sigma^2$, su promedio $\bar{Z}$ tiene varianza $\sigma^2/n$ \vspace{0.3cm}
+
+\item \textbf{Bagging} (\textit{bootstrap aggregating}) aplica esta idea: entrenamos $B$ modelos sobre $B$ muestras bootstrap y promediamos:
+\[
+\hat{f}_{bag}(x) = \frac{1}{B}\sum_{b=1}^B \hat{f}^{*b}(x)
+\]
+
+\item En \textbf{clasificación}, en vez de promediar, cada árbol ``vota'' y gana la mayoría
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Bagging}
+
+\begin{figure}
+\includegraphics[scale=0.5]{trees.jpg}
+\end{figure}
+
+\tiny{Fuente: slideshare.net/mlvlc/l4-ensembles-of-decision-trees}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Bagging: costos y beneficios}
+
+\begin{itemize}
+\item ¿Cuántos árboles ($B$)? No es un parámetro crítico: usar muchos no causa overfitting, los resultados se estabilizan \vspace{0.3cm}
+
+\item Beneficio: menor varianza y mayor precisión \vspace{0.3cm}
+
+\item Costo: el modelo deja de ser un único árbol interpretable \vspace{0.3cm}
+
+\item Pero aún podemos medir la \textbf{importancia de cada variable}: cuánto reduce, en promedio, el índice de entropía/Gini al usarse en las divisiones
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Importancia de variables}
+
+\begin{figure}
+\includegraphics[scale=0.7]{variableimportance.pdf}
+\end{figure}
+
+\tiny{Fuente: James et al. (2013)}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Error \textit{Out of Bag} (OOB)}
+
+\begin{itemize}
+\item Al tomar una muestra bootstrap, algunas observaciones \textbf{quedan por fuera} \vspace{0.3cm}
+
+\item Cada observación tiene un conjunto de árboles que no la usaron para entrenar \vspace{0.3cm}
+
+\item Esos árboles pueden predecir sobre ella, y comparamos con su valor real \vspace{0.3cm}
+
+\item Esto da la \textbf{tasa de error OOB}: una forma ``gratis'' de validar el modelo, sin separar datos de prueba
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Random Forests}
+
+\begin{itemize}
+\item Son una mejora sobre el bagging \vspace{0.3cm}
+
+\item Problema del bagging: todos los árboles usan \textbf{las mismas variables}, así que tienden a parecerse (están muy \textbf{correlacionados}) \vspace{0.3cm}
+
+\item Si hay una variable muy dominante, casi todos los árboles dividen primero por ella \vspace{0.3cm}
+
+\item Promediar árboles parecidos no reduce mucho la varianza
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Random Forests}
+
+\begin{figure}
+\includegraphics[scale=0.07]{randomforests.pdf}
+\end{figure}
+
+\tiny{Fuente: blog.citizennet.com}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Random Forests: el algoritmo}
+
+Para cada árbol del bosque:
+
+\begin{itemize}
+\item[1.] Extrae una muestra \textbf{bootstrap} de los datos \vspace{0.2cm}
+
+\item[2.] Construye un árbol, pero en \textbf{cada nodo}:
+\begin{itemize}
+\item[i)] elige al azar un \textbf{subconjunto} de variables
+\item[ii)] busca la mejor división solo entre esas variables
+\end{itemize}
+\vspace{0.2cm}
+
+\item[3.] Se empaquetan todos los árboles y se vota la predicción
+
+\end{itemize}
+\vspace{0.2cm}
+
+Heurística: $m=\sqrt{p}$ variables por nodo (con $p$ variables en total).
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Random Forests: la intuición}
+
+\begin{itemize}
+\item Al restringir las variables, no todos los árboles usan la variable dominante \vspace{0.3cm}
+
+\item Los árboles se \textbf{parecen menos} entre sí: se \textbf{decorrelacionan} \vspace{0.3cm}
+
+\item Promediar árboles diversos sí reduce la varianza y mejora la predicción \vspace{0.3cm}
+
+\item Nota: el \textbf{bagging} es un caso particular de random forest, cuando $m=p$ \vspace{0.3cm}
+
+\item \textbf{Al taller}: compararemos un árbol, bagging y random forest sobre los mismos datos
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Resumen de la sesión}
+
+\begin{itemize}
+\item \textbf{SVM}: separa las clases con el hiperplano de máximo margen; los kernels manejan la no-linealidad. Potente pero ``caja negra'' \vspace{0.3cm}
+
+\item \textbf{Árboles}: reglas simples y muy interpretables, pero con alta varianza y riesgo de overfitting \vspace{0.3cm}
+
+\item \textbf{Bagging / Random Forests}: combinan muchos árboles para reducir la varianza; los random forests además los decorrelacionan \vspace{0.3cm}
+
+\item Esto último es nuestra primera idea de \textbf{ensamblaje}, que retomaremos al hablar de desempeño de modelos
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{document}

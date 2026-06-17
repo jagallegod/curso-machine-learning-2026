@@ -1,0 +1,238 @@
+---
+title: "Árboles de decisión en R"
+output:
+ html_notebook: default
+---
+
+# 1. Introducción
+
+\
+
+- Los árboles de decisión son muy utilizados en la práctica, a pesar de no ser siempre el método más preciso.
+
+- Esto, porque son intuitivos y fáciles de explicar.
+
+- Se usan mucho en los sectores financiero y bancario. La aplicación que veremos es de ese sector.
+
+- Tras la crisis de 2007--2008, los controles al crédito se volvieron más estrictos y los sistemas de préstamo más sofisticados.
+
+- Se empezó a usar machine learning para predecir el riesgo de *default*.
+
+- Los árboles son populares ahí porque suelen ser precisos y fáciles de comunicar: los ejecutivos deben poder explicar por qué se niega un crédito (a reguladores y a clientes).
+
+- Desarrollaremos un modelo simple de aprobación automatizada de créditos con el algoritmo C5.0.
+
+\
+
+# 2. Datos
+
+\
+
+- La idea es identificar los factores que predicen una alta probabilidad de *default*.
+
+- Trabajaremos con `credit.csv`, que contiene información de 1.000 préstamos en Alemania, con indicación de si el crédito entró en *default* o no, y un buen conjunto de datos sobre los prestatarios.
+
+- Leemos la base. En este caso usamos `stringsAsFactors = TRUE`, porque sí nos conviene que las variables de texto queden como **factores** (el algoritmo C5.0 las usa así):
+
+\
+
+```{r}
+credit <- read.csv("data/credit.csv", stringsAsFactors = TRUE)
+```
+
+\
+
+```{r}
+str(credit)
+```
+
+\
+
+- `default` es el *outcome* a pronosticar. Viene como variable `integer`, pero la necesitamos como **factor**:
+
+\
+
+```{r}
+credit$default <- factor(credit$default)
+```
+
+\
+
+- Tenemos 1.000 observaciones y 21 variables, con características del crédito y del prestatario. Por ejemplo, el valor del préstamo:
+
+\
+
+```{r}
+summary(credit$amount)
+```
+
+\
+
+- O el balance en cuenta corriente (en marcos alemanes, DM):
+
+\
+
+```{r}
+table(credit$checking_balance)
+```
+
+\
+
+- Muy probablemente estas variables son buenos predictores del *default*.
+
+\
+
+# 3. Bases de entrenamiento y prueba
+
+\
+
+- Antes partíamos las bases fácilmente porque los datos venían en orden aleatorio. ¿Qué hacer si vienen ordenados (por ejemplo, por el valor del crédito)?
+
+- Tomamos una **muestra aleatoria**: 90% para entrenar, 10% para probar. Fijamos una semilla para poder replicar:
+
+\
+
+```{r}
+set.seed(123)
+```
+
+\
+
+- Generamos un vector de 900 enteros aleatorios entre 1 y 1.000:
+
+\
+
+```{r}
+train_sample <- sample(1000, 900)
+```
+
+\
+
+- Las filas de `credit` correspondientes a esos números serán el entrenamiento; el resto, la prueba:
+
+\
+
+```{r}
+credit_train <- credit[train_sample, ]
+credit_test  <- credit[-train_sample, ]
+```
+
+\
+
+- Verifiquemos que la proporción de *default* es similar en ambas bases (y en el total):
+
+\
+
+```{r}
+prop.table(table(credit_train$default))
+prop.table(table(credit_test$default))
+prop.table(table(credit$default))
+```
+
+\
+
+- Cerca de 3 de cada 10 créditos terminan en *default*.
+
+\
+
+# 4. Entrenamiento del modelo
+
+\
+
+- Para entrenar el árbol usaremos el paquete `C50`. Si no lo tienes instalado:
+
+\
+
+```{r, eval=FALSE}
+install.packages("C50")
+```
+
+\
+
+```{r}
+library(C50)
+```
+
+\
+
+- La función de entrenamiento es `C5.0`, con sintaxis `m <- C5.0(train, class, trials, costs)`, donde:
+
+    - `train` es la base de entrenamiento (sin la columna del *outcome*).
+    - `class` es el vector de clases.
+    - `trials` es un número opcional de iteraciones de *boosting* (por defecto 1; lo veremos más adelante).
+    - `costs` es una matriz opcional con los costos relativos de cada tipo de error.
+
+- En `credit_train`, la columna 21 es `default`. Entrenamos con el resto de columnas y usamos esa columna como `class`:
+
+\
+
+```{r}
+credit_model <- C5.0(credit_train[-21], credit_train$default)
+```
+
+\
+
+```{r}
+credit_model
+```
+
+\
+
+- Es un árbol con 900 ejemplos y 20 características. Veamos sus reglas y su desempeño en entrenamiento:
+
+\
+
+```{r}
+summary(credit_model)
+```
+
+\
+
+- La primera parte muestra las ramas del árbol; la segunda, el desempeño sobre los **datos de entrenamiento** (precisión cercana al 85%).
+
+- Pero los árboles tienden a sobreajustar el entrenamiento. Lo que importa es el desempeño en la base de **prueba**.
+
+\
+
+# 5. Evaluación del desempeño del modelo
+
+\
+
+- Predecimos la clase de cada ejemplo de prueba con `predict()` (sintaxis `p <- predict(m, test, type)`; por defecto `type = "class"`):
+
+\
+
+```{r}
+credit_pred <- predict(credit_model, credit_test)
+```
+
+\
+
+- Y hacemos nuestra acostumbrada tabla con `gmodels`:
+
+\
+
+```{r, eval=FALSE}
+install.packages("gmodels")
+```
+
+\
+
+```{r}
+library(gmodels)
+```
+
+\
+
+```{r}
+CrossTable(credit_test$default, credit_pred, prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
+           dnn = c("default real", "default pronosticado"))
+```
+
+\
+
+- La precisión total en prueba (cercana al 70%) es bastante menor que en entrenamiento: evidencia de sobreajuste.
+
+- Lo más preocupante son los **falsos negativos**: créditos que terminan en *default* pero el modelo predice que no. Son los más costosos para el banco.
+
+- En la próxima sesión (Random Forests) y en la sesión de desempeño veremos cómo mejorar este resultado poco satisfactorio.

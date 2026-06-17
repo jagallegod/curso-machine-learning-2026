@@ -1,0 +1,804 @@
+\documentclass{beamer}
+
+\usepackage{soul}
+
+
+\usetheme{Boadilla}
+
+\setbeamersize{text margin left=1cm,text margin right=1cm}
+
+% DEFINITON FOOTLINE
+% here: empty
+\setbeamertemplate{footline}
+{%
+\begin{beamercolorbox}{}
+\end{beamercolorbox}%
+}
+
+
+\usepackage[english]{babel}
+\usepackage[latin1]{inputenc}
+\usepackage{color}
+\usepackage{graphicx}
+\graphicspath{{img/}}
+\usepackage{setspace}
+%\usepackage[pdftex]{graphicx}
+
+%TABELLEN
+\usepackage{array}
+%\usepackage{ctable}		%Tabellen mit Fussoten
+\usepackage{multirow}
+\usepackage{booktabs}
+	% Neue Tabellenbefehle in der array Umgebung
+	\renewcommand{\arraystretch}{1.2} % Zeilenabstand
+	\newcolumntype{C}[1]{>{\centering\let\\\tabularnewline}p{#1}}
+	\newcolumntype{R}[1]{>{\raggedleft\let\\\tabularnewline}p{#1}}
+	\newcolumntype{L}[1]{>{\raggedright\let\\\tabularnewline}p{#1}}
+
+\setbeamercovered{transparent}
+
+
+\title{Aprendizaje no supervisado}
+\author{Jorge Gallego}
+\institute{Inter-American Development Bank}
+
+\date{Bogotá Summer School in Economics --- 2026}
+
+\begin{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\frame{\titlepage}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Agenda de la sesión}
+
+\begin{itemize}
+\item Hasta ahora, aprendizaje \textbf{supervisado}: predecir un \textit{outcome} conocido \vspace{0.3cm}
+
+\item Hoy cambiamos de mundo: \textbf{no} hay etiquetas, queremos \textbf{descubrir estructura} \vspace{0.3cm}
+
+\begin{itemize}
+\item[1.] Introducción al aprendizaje no supervisado
+\item[2.] Clustering (k-medias)
+\item[3.] Detección de anomalías
+\item[4.] Representación de datos y \textit{embeddings}
+\end{itemize}
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%   PARTE 1: INTRODUCCIÓN   %%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+\begin{center}
+{\Huge \textbf{Parte 1}}\\[0.5cm]
+{\large ¿Qué es el aprendizaje no supervisado?}
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Aprendizaje no supervisado}
+
+\begin{itemize}
+\item En el supervisado teníamos un \textit{outcome} $y$ que queríamos predecir \vspace{0.3cm}
+
+\item En el \textbf{no supervisado} no hay $y$: solo tenemos las características \vspace{0.3cm}
+
+\item El objetivo no es predecir, sino \textbf{describir} y \textbf{descubrir patrones} en los datos \vspace{0.3cm}
+
+\item Ninguna variable es más importante que las demás: las miramos todas en conjunto
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Tres tareas que veremos}
+
+\begin{itemize}
+\item[1.] \textbf{Clustering}: agrupar objetos similares (segmentar) \vspace{0.3cm}
+
+\item[2.] \textbf{Detección de anomalías}: encontrar los casos ``raros'' \vspace{0.3cm}
+
+\item[3.] \textbf{Representación / reducción de dimensión}: resumir muchas variables en pocas, más útiles \vspace{0.3cm}
+
+\item Como no hay etiquetas, evaluar el resultado es más difícil: mucho depende de la \textbf{interpretación} del analista
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{¿Para qué sirve?}
+
+\begin{itemize}
+\item \textbf{Segmentación} de clientes, votantes o mercados \vspace{0.3cm}
+
+\item \textbf{Detección de fraude}, fallas o intrusiones (lo raro) \vspace{0.3cm}
+
+\item \textbf{Visualización} y \textbf{compresión} de datos de alta dimensión \vspace{0.3cm}
+
+\item \textbf{Preprocesamiento}: crear mejores variables para un modelo supervisado posterior
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%   PARTE 2: CLUSTERING   %%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+\begin{center}
+{\Huge \textbf{Parte 2}}\\[0.5cm]
+{\large Clustering con k-medias}
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Clustering}
+
+\begin{itemize}
+\item A veces conviene \textbf{agrupar} objetos en categorías que no conocíamos de antemano \vspace{0.3cm}
+
+\item En marketing: segmentar mercados para una estrategia por grupo \vspace{0.3cm}
+
+\item En campañas políticas: identificar tipos de votantes \vspace{0.3cm}
+
+\item El clustering divide los datos en \textbf{clusters}: grupos de objetos similares entre sí y distintos de los demás
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Un ejemplo cotidiano}
+
+\begin{figure}
+\includegraphics[width=0.6\textwidth]{scarlett.png}
+\end{figure}
+
+\begin{center}
+\small Las películas de un actor podrían agruparse por género sin decirle al algoritmo cuáles son los géneros.
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Clustering: clasificación no supervisada}
+
+\begin{itemize}
+\item Es \textbf{no supervisado}: no decimos ex ante cómo deben verse los grupos \vspace{0.3cm}
+
+\item No sirve para \textbf{predecir}, sino para \textbf{descubrir} estructura \vspace{0.3cm}
+
+\item Los grupos que devuelve el computador \textbf{no tienen significado explícito}: la interpretación la pone el analista \vspace{0.3cm}
+
+\item ¿Cómo decide el computador dónde están las fronteras de los grupos?
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Ejemplo: conferencia de \textit{data science}}
+
+\begin{itemize}
+\item Queremos sentar a los asistentes según su especialidad, pero no sabemos a qué área pertenecen \vspace{0.3cm}
+
+\item Los describimos por dos características: cuánto publican en \textbf{computer science} y en \textbf{matemáticas/estadística}
+\end{itemize}
+
+\begin{figure}
+\includegraphics[width=0.62\textwidth]{clusters1.pdf}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Ejemplo: conferencia de \textit{data science}}
+
+¿Se ven grupos? Computer scientists, matemáticos/estadísticos, y \textit{machine learning} (mucho de ambos).
+
+\begin{figure}
+\includegraphics[width=0.62\textwidth]{clusters2.pdf}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{El algoritmo de k-medias}
+
+\begin{itemize}
+\item El más usado para clustering; emparentado con kNN \vspace{0.3cm}
+
+\item Asigna cada uno de los $n$ ejemplos a uno de $k$ clusters \vspace{0.3cm}
+
+\item El número $k$ se fija \textbf{ex ante} (de forma heurística) \vspace{0.3cm}
+
+\item Busca \textbf{minimizar} las diferencias dentro de cada cluster y \textbf{maximizar} las diferencias entre clusters
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{k-medias: elegir centros}
+
+\begin{itemize}
+\item Se eligen al azar $k$ puntos como centros iniciales (aquí $k=3$):
+\end{itemize}
+
+\begin{figure}
+\includegraphics[width=0.6\textwidth]{clusters3.pdf}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{k-medias: asignar al centro más cercano}
+
+\begin{itemize}
+\item Cada punto se asigna al centro más cercano (distancia euclídea): se forma el \textbf{diagrama de Voronoi}
+\[
+dist(x,y)=\sqrt{\sum_{i=1}^n (x_i-y_i)^2}
+\]
+\end{itemize}
+
+\begin{figure}
+\includegraphics[width=0.55\textwidth]{clusters4.pdf}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{k-medias: actualizar los centroides}
+
+\begin{itemize}
+\item Cada centro se mueve al \textbf{centroide} (la posición promedio) de los puntos de su cluster:
+\end{itemize}
+
+\begin{figure}
+\includegraphics[width=0.6\textwidth]{clusters5.pdf}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{k-medias: iterar hasta converger}
+
+\begin{itemize}
+\item Con los nuevos centros se reasignan los puntos; algunos cambian de cluster \vspace{0.2cm}
+\item Se repite hasta que ya no haya cambios:
+\end{itemize}
+
+\begin{figure}
+\includegraphics[width=0.6\textwidth]{clusters6.pdf}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{¿Cuántos clusters?}
+
+\begin{itemize}
+\item $k$ es una decisión crucial (y el algoritmo también es sensible a los centros iniciales) \vspace{0.3cm}
+
+\item Si hay un \textbf{prior}, úsalo (categorías de negocio, número de mesas, de campañas...) \vspace{0.3cm}
+
+\item Regla de dedo: $k = \sqrt{n/2}$ \vspace{0.3cm}
+
+\item \textbf{Método del codo}: aumentar $k$ hasta que la ganancia marginal en homogeneidad se aplane
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Método del codo}
+
+\begin{figure}
+\includegraphics[width=0.62\textwidth]{elbow.pdf}
+\end{figure}
+
+\begin{center}
+\small Nos quedamos en el ``codo'': donde añadir clusters ya casi no reduce la heterogeneidad.
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Al taller}
+
+\begin{itemize}
+\item Segmentaremos a \textbf{30.000 adolescentes} de una red social según las palabras de su perfil \vspace{0.3cm}
+
+\item Usaremos $k=5$ (inspirados en \textit{The Breakfast Club}: princesas, atletas, cerebros, etc.) \vspace{0.3cm}
+
+\item Veremos cómo el algoritmo recupera grupos interpretables sin que le digamos nada de antemano \vspace{0.3cm}
+
+\item Base: \texttt{teens.csv}, con la función \texttt{kmeans()}
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%   PARTE 3: ANOMALÍAS   %%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+\begin{center}
+{\Huge \textbf{Parte 3}}\\[0.5cm]
+{\large Detección de anomalías}
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{¿Qué es una anomalía?}
+
+\begin{itemize}
+\item Una \textbf{anomalía} (\textit{outlier}) es un caso que se aparta mucho del patrón general \vspace{0.3cm}
+
+\item A menudo lo raro es lo más interesante:
+\begin{itemize}
+\item transacciones \textbf{fraudulentas} con tarjeta
+\item \textbf{fallas} de una máquina o un sensor
+\item \textbf{intrusiones} en una red; errores en los datos
+\end{itemize}
+\vspace{0.3cm}
+
+\item Suele ser un problema \textbf{no supervisado}: no tenemos ejemplos etiquetados de ``anomalía''
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Cuatro familias de métodos}
+
+\begin{itemize}
+\item \textbf{Estadístico}: lo que cae lejos de lo típico (z-score, rango intercuartílico) \vspace{0.3cm}
+
+\item \textbf{Por distancia}: puntos lejos de sus vecinos o del centro de su cluster \vspace{0.3cm}
+
+\item \textbf{Por densidad}: puntos en zonas poco pobladas (LOF) \vspace{0.3cm}
+
+\item \textbf{Por modelo}: aprender la ``forma normal'' y marcar lo que no encaja (\textit{isolation forest}, \textit{one-class SVM})
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Enfoque estadístico}
+
+\begin{columns}
+\begin{column}{0.5\textwidth}
+\footnotesize
+\begin{itemize}
+\item Univariado: marcar valores con $|z|>3$ (regla de 3 sigma) o fuera del rango intercuartílico (Tukey) \vspace{0.2cm}
+\item Multivariado: la \textbf{distancia de Mahalanobis} mide qué tan ``raro'' es un punto teniendo en cuenta la correlación entre variables \vspace{0.2cm}
+\item Simple y rápido, pero asume una forma (p. ej. normal)
+\end{itemize}
+\end{column}
+\begin{column}{0.5\textwidth}
+\includegraphics[width=\textwidth]{zscore_outliers.pdf}
+\end{column}
+\end{columns}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Enfoque por distancia}
+
+\begin{itemize}
+\item Idea: un punto es anómalo si está \textbf{lejos} de los demás \vspace{0.3cm}
+
+\item Distancia al $k$-ésimo vecino más cercano: a mayor distancia, más aislado \vspace{0.3cm}
+
+\item O distancia al \textbf{centroide} de su cluster (conecta con k-medias): los puntos lejos de todos los centros son sospechosos \vspace{0.3cm}
+
+\item Limitación: falla cuando hay zonas con densidades muy distintas
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{LOF: Local Outlier Factor}
+
+\begin{itemize}
+\item Idea: comparar la \textbf{densidad local} de un punto con la de sus vecinos \vspace{0.3cm}
+
+\item Si un punto está en una zona \textbf{mucho menos densa} que sus vecinos, es sospechoso \vspace{0.3cm}
+
+\item Devuelve un \textbf{puntaje}:
+\begin{itemize}
+\item $LOF \approx 1$: densidad parecida a la de sus vecinos (normal)
+\item $LOF \gg 1$: mucho más aislado que sus vecinos (anomalía)
+\end{itemize}
+\vspace{0.3cm}
+
+\item Ventaja sobre el enfoque por distancia: detecta anomalías \textbf{locales}, no solo las globales
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{LOF: ¿cómo se calcula? (intuición)}
+
+\begin{itemize}
+\item[1.] Para cada punto, se miran sus $k$ vecinos más cercanos \vspace{0.3cm}
+
+\item[2.] Se estima su \textbf{densidad local}: qué tan apiñados están esos vecinos a su alrededor \vspace{0.3cm}
+
+\item[3.] Se compara esa densidad con la densidad \textbf{de} sus vecinos \vspace{0.3cm}
+
+\item[4.] El \textbf{LOF} es la razón entre ambas: si la del punto es mucho menor, el cociente es alto \vspace{0.3cm}
+
+\item Por eso un punto solitario al borde de un grupo denso tiene LOF alto, aunque no esté ``tan lejos'' en distancia absoluta
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{LOF en acción}
+
+\begin{figure}
+\includegraphics[width=0.6\textwidth]{lof_anomalias.pdf}
+\end{figure}
+
+\begin{center}
+\small Los puntos con LOF alto (rojos) están en zonas poco densas, lejos de los grupos.
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Isolation Forest}
+
+\begin{itemize}
+\item Un enfoque \textbf{por modelo}, basado en árboles (conecta con random forests) \vspace{0.3cm}
+
+\item Idea: aislar cada punto haciendo \textbf{cortes aleatorios} en las variables \vspace{0.3cm}
+
+\item Un punto \textbf{anómalo}, al estar apartado, se aísla con \textbf{muy pocos} cortes \vspace{0.3cm}
+
+\item Uno \textbf{normal}, en una zona densa, requiere muchos cortes \vspace{0.3cm}
+
+\item El número promedio de cortes mide la anomalía. Es rápido y escala bien a muchos datos
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{¿Cómo evaluar sin etiquetas?}
+
+\begin{itemize}
+\item Sin etiquetas de ``anomalía'', validar es difícil: a menudo se \textbf{inspeccionan a mano} los casos con mayor puntaje \vspace{0.3cm}
+
+\item Si tenemos \textbf{algunas} etiquetas (p. ej. fraudes confirmados), es un problema \textbf{semi-supervisado}: podemos medir cuántos de los \textit{top-N} marcados eran reales (precisión@N) \vspace{0.3cm}
+
+\item No hay umbral universal: cuántos casos marcar depende del \textbf{costo} de cada error \vspace{0.3cm}
+
+\item Como se basa en distancias, conviene \textbf{escalar} las variables (como en kNN)
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Aplicaciones y al taller}
+
+\begin{itemize}
+\item \textbf{Fraude} financiero y de tarjetas; \textbf{ciberseguridad} (intrusiones) \vspace{0.2cm}
+\item \textbf{Mantenimiento predictivo} (sensores que anticipan fallas) \vspace{0.2cm}
+\item \textbf{Salud} (lecturas anómalas) y \textbf{calidad de datos} (errores de captura) \vspace{0.3cm}
+
+\item \textbf{Al taller}: aplicaremos LOF (paquete \texttt{dbscan}) a un conjunto de \textbf{transacciones} (en 2D) para señalar operaciones atípicas (posible fraude)
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%   PARTE 4: REPRESENTACIÓN   %%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+\begin{center}
+{\Huge \textbf{Parte 4}}\\[0.5cm]
+{\large Representación de datos y \textit{embeddings}}
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{El reto de la alta dimensión}
+
+\begin{itemize}
+\item Muchos problemas tienen \textbf{decenas o miles} de variables \vspace{0.3cm}
+
+\item Difíciles de \textbf{visualizar}, costosas de procesar, y con la \textbf{maldición de la dimensionalidad} \vspace{0.3cm}
+
+\item Pero muchas variables están \textbf{correlacionadas}: hay redundancia \vspace{0.3cm}
+
+\item ¿Podemos \textbf{resumir} la información en muchas menos dimensiones, perdiendo poco?
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Aprendizaje de representación}
+
+\begin{itemize}
+\item En vez de usar las variables crudas, buscamos una \textbf{representación} más compacta y útil de los datos \vspace{0.3cm}
+
+\item Es la versión no supervisada del \textit{feature extraction} que vimos en desempeño \vspace{0.3cm}
+
+\item La técnica clásica y más intuitiva: \textbf{Análisis de Componentes Principales} (PCA) \vspace{0.3cm}
+
+\item (Y la base conceptual de los \textit{embeddings} del aprendizaje profundo)
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{PCA: la idea}
+
+\begin{columns}
+\begin{column}{0.52\textwidth}
+\begin{itemize}
+\item PCA encuentra nuevas variables (\textbf{componentes}) que son combinaciones lineales de las originales \vspace{0.2cm}
+\item La 1.ª componente apunta en la dirección de \textbf{máxima varianza} \vspace{0.2cm}
+\item Las siguientes son ortogonales y captan la varianza restante
+\end{itemize}
+\end{column}
+\begin{column}{0.48\textwidth}
+\includegraphics[width=\textwidth]{pca_idea.pdf}
+\end{column}
+\end{columns}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{PCA: ¿cómo funciona?}
+
+\begin{itemize}
+\item Buscamos direcciones que maximicen la \textbf{varianza} de los datos proyectados \vspace{0.3cm}
+
+\item Esas direcciones son los \textbf{autovectores} de la matriz de covarianzas; cada \textbf{autovalor} dice cuánta varianza captura su dirección \vspace{0.3cm}
+
+\item Las componentes son \textbf{ortogonales} (no correlacionadas) y se ordenan de mayor a menor varianza \vspace{0.3cm}
+
+\item Intuición, sin fórmulas: ``girar los ejes'' para alinearlos con la mayor dispersión de la nube de puntos
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{PCA: de 30 variables a 2}
+
+\begin{columns}
+\begin{column}{0.5\textwidth}
+\begin{itemize}
+\item Tomamos las 30 variables del cáncer de seno (sesión 1) \vspace{0.2cm}
+\item Las proyectamos en sus 2 primeras componentes \vspace{0.2cm}
+\item Aunque PCA \textbf{no} usa el diagnóstico, los benignos y malignos quedan casi separados
+\end{itemize}
+\end{column}
+\begin{column}{0.5\textwidth}
+\includegraphics[width=\textwidth]{pca_projection.pdf}
+\end{column}
+\end{columns}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{¿Cuántas componentes?}
+
+\begin{columns}
+\begin{column}{0.5\textwidth}
+\begin{itemize}
+\item Cada componente explica una fracción de la \textbf{varianza} total \vspace{0.2cm}
+\item Aquí, las 2 primeras ya capturan $\sim$63\% \vspace{0.2cm}
+\item Nos quedamos con las que acumulan ``suficiente'' (otra vez, el codo)
+\end{itemize}
+\end{column}
+\begin{column}{0.5\textwidth}
+\includegraphics[width=\textwidth]{pca_scree.pdf}
+\end{column}
+\end{columns}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Interpretar las componentes}
+
+\begin{columns}
+\begin{column}{0.5\textwidth}
+\begin{itemize}
+\item Cada componente es una \textbf{mezcla} de las variables originales \vspace{0.2cm}
+\item Los \textbf{pesos} (\textit{loadings}) dicen cuánto aporta cada variable \vspace{0.2cm}
+\item Mirándolos le damos sentido a la componente (aquí, PC1 $\approx$ ``tamaño/severidad'' del tumor)
+\end{itemize}
+\end{column}
+\begin{column}{0.5\textwidth}
+\includegraphics[width=\textwidth]{pca_loadings.pdf}
+\end{column}
+\end{columns}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{¿Para qué usar PCA?}
+
+\begin{itemize}
+\item \textbf{Compresión}: menos columnas, menos cómputo y almacenamiento \vspace{0.3cm}
+
+\item \textbf{Visualización}: graficar en 2 o 3 componentes \vspace{0.3cm}
+
+\item \textbf{Quitar multicolinealidad} antes de una regresión (las componentes no están correlacionadas) \vspace{0.3cm}
+
+\item \textbf{Preprocesamiento} para otros modelos \vspace{0.3cm}
+
+\item Costo: las componentes son \textbf{menos interpretables} que las variables originales
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Más allá de PCA: t-SNE y UMAP}
+
+\begin{itemize}
+\item PCA es \textbf{lineal}. Para estructuras curvas hay métodos no lineales \vspace{0.3cm}
+
+\item \textbf{t-SNE} y \textbf{UMAP}: pensados sobre todo para \textbf{visualizar} datos de alta dimensión en 2D \vspace{0.3cm}
+
+\item Preservan la \textbf{vecindad local}: puntos parecidos quedan cerca \vspace{0.3cm}
+
+\item Muy usados para explorar imágenes, texto o datos genéticos
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{t-SNE/UMAP: cómo leerlos}
+
+\begin{columns}
+\begin{column}{0.5\textwidth}
+\begin{itemize}
+\item Lo \textbf{cercano} es similar; los grupos saltan a la vista \vspace{0.2cm}
+\item \textbf{Cuidado}: NO conservan distancias globales ni tamaños de cluster \vspace{0.2cm}
+\item No interpretes el tamaño de los grupos ni qué tan separados están como algo literal
+\end{itemize}
+\end{column}
+\begin{column}{0.5\textwidth}
+\includegraphics[width=\textwidth]{tsne_concept.pdf}
+\end{column}
+\end{columns}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Embeddings}
+
+\begin{columns}
+\begin{column}{0.5\textwidth}
+\begin{itemize}
+\item Un \textbf{embedding} representa un objeto complejo como un \textbf{vector denso} de pocos números \vspace{0.2cm}
+\item \textbf{word2vec}: palabras como vectores; las de significado parecido quedan cerca \vspace{0.2cm}
+\item Y las relaciones se vuelven \textbf{aritmética}: ``rey $-$ hombre $+$ mujer $\approx$ reina''
+\end{itemize}
+\end{column}
+\begin{column}{0.5\textwidth}
+\includegraphics[width=\textwidth]{embeddings_analogy.pdf}
+\end{column}
+\end{columns}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Autoencoders}
+
+\begin{itemize}
+\item Una red neuronal que aprende a \textbf{comprimir} los datos y luego \textbf{reconstruirlos} \vspace{0.3cm}
+
+\item La capa central (un ``cuello de botella'') es una \textbf{representación compacta} aprendida \vspace{0.3cm}
+
+\item Es la versión \textbf{profunda y no lineal} de la reducción de dimensión \vspace{0.3cm}
+
+\item Las redes neuronales aprenden embeddings de palabras, imágenes, usuarios, productos... \vspace{0.3cm}
+
+\item Es el puente hacia la última sesión: \textbf{aprendizaje profundo}
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Al taller}
+
+\begin{itemize}
+\item Aplicaremos \textbf{PCA} a las 30 variables del cáncer de seno (\texttt{wisc\_bc\_data.csv}) \vspace{0.3cm}
+
+\item Con la función \texttt{prcomp()} de R base \vspace{0.3cm}
+
+\item Veremos la varianza explicada y proyectaremos los datos en 2 dimensiones \vspace{0.3cm}
+
+\item Comprobando cuánta estructura se conserva al reducir de 30 a 2
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Resumen de la sesión}
+
+\begin{itemize}
+\item El aprendizaje \textbf{no supervisado} descubre estructura sin etiquetas \vspace{0.3cm}
+
+\item \textbf{Clustering} (k-medias): agrupa objetos similares; elegir $k$ es clave \vspace{0.3cm}
+
+\item \textbf{Detección de anomalías}: estadística, distancia, densidad (LOF) o modelos (isolation forest); el contexto define el umbral \vspace{0.3cm}
+
+\item \textbf{Representación}: PCA resume muchas variables en pocas componentes; t-SNE/UMAP visualizan; los \textit{embeddings} y \textit{autoencoders} extienden la idea hacia el aprendizaje profundo
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{document}

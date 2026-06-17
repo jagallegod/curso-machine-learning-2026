@@ -1,0 +1,167 @@
+---
+title: "Redes neuronales artificiales en R"
+output:
+ html_notebook: default
+---
+
+# 1. Introducción
+
+\
+
+- Aplicaremos una red neuronal a un problema de **economía de la salud**: predecir el **gasto médico anual** de un asegurado a partir de sus características.
+
+- Es un problema de **predicción numérica** (el *outcome*, `charges`, es continuo) muy relevante para aseguradoras y para el diseño de políticas de salud.
+
+- Ya lo abordamos con **regresión** en la sesión 3; ahora lo haremos con una **red neuronal** y compararemos. Usaremos `insurance.csv` y el paquete `neuralnet` (entrena redes sencillas en R, sin TensorFlow).
+
+\
+
+# 2. Datos
+
+\
+
+```{r}
+insurance <- read.csv("data/insurance.csv", stringsAsFactors = FALSE)
+str(insurance)
+```
+
+\
+
+- Son 1.338 asegurados. El *outcome* es `charges` (gasto médico anual). Entre los predictores, `smoker` es categórico; lo convertimos a una variable numérica 0/1 (fumador = 1):
+
+\
+
+```{r}
+insurance$smoker <- ifelse(insurance$smoker == "yes", 1, 0)
+```
+
+\
+
+- Para este taller usaremos cuatro predictores numéricos: edad, índice de masa corporal, número de hijos y si es fumador. Nos quedamos con ellos y con el *outcome*:
+
+\
+
+```{r}
+datos <- insurance[, c("age", "bmi", "children", "smoker", "charges")]
+```
+
+\
+
+- En redes neuronales, por la forma de las funciones de activación, conviene **normalizar** todas las variables a un rango [0, 1]. Definimos la función y la aplicamos:
+
+\
+
+```{r}
+normalize <- function(x) {
+  return((x - min(x)) / (max(x) - min(x)))
+}
+datos_norm <- as.data.frame(lapply(datos, normalize))
+summary(datos_norm$charges)
+```
+
+\
+
+- Dividamos en entrenamiento (75%) y prueba (25%), fijando la semilla:
+
+\
+
+```{r}
+set.seed(123)
+train_idx <- sample(nrow(datos_norm), 0.75 * nrow(datos_norm))
+ins_train <- datos_norm[train_idx, ]
+ins_test  <- datos_norm[-train_idx, ]
+```
+
+\
+
+# 3. Entrenamiento del modelo
+
+\
+
+- Usaremos `neuralnet()`, con sintaxis `m <- neuralnet(target ~ predictors, data = mydata, hidden = 1)`. Si no tienes el paquete:
+
+\
+
+```{r, eval=FALSE}
+install.packages("neuralnet")
+```
+
+\
+
+- Entrenemos una red sencilla, con una sola neurona oculta:
+
+\
+
+```{r}
+library(neuralnet)
+set.seed(123)
+ins_model <- neuralnet(charges ~ age + bmi + children + smoker, data = ins_train)
+```
+
+\
+
+- Visualicemos la topología de la red estimada (nodos de entrada, el nodo oculto y el de salida; en azul, los términos de sesgo):
+
+\
+
+```{r}
+plot(ins_model, rep = "best")
+```
+
+\
+
+# 4. Desempeño del modelo
+
+\
+
+- Generamos predicciones sobre la base de prueba con `compute()` (usa las 4 características):
+
+\
+
+```{r}
+model_results <- compute(ins_model, ins_test[, c("age", "bmi", "children", "smoker")])
+predicted_charges <- model_results$net.result
+```
+
+\
+
+- Como la predicción es **numérica**, medimos qué tan cerca está de lo observado con la **correlación**:
+
+\
+
+```{r}
+cor(predicted_charges, ins_test$charges)
+```
+
+\
+
+- Una correlación alta indica que la red captura bien el gasto. El predictor dominante es `smoker`: los fumadores gastan mucho más.
+
+\
+
+# 5. Una red más compleja
+
+\
+
+- Probemos una red con **5 nodos** en la capa oculta, capaz de capturar relaciones no lineales (por ejemplo, la interacción entre obesidad y tabaquismo que vimos en la sesión 3):
+
+\
+
+```{r}
+set.seed(123)
+ins_model2 <- neuralnet(charges ~ age + bmi + children + smoker, data = ins_train, hidden = 5)
+```
+
+\
+
+```{r}
+model_results2 <- compute(ins_model2, ins_test[, c("age", "bmi", "children", "smoker")])
+predicted_charges2 <- model_results2$net.result
+cor(predicted_charges2, ins_test$charges)
+```
+
+\
+
+- La correlación suele **mejorar** con más nodos, aunque más capacidad también puede llevar a sobreajuste: es el mismo *trade-off* de siempre.
+
+- Como ejercicio: agrega `sex` y `region` (creando variables dummy), o compara estas predicciones con las del modelo de regresión lineal de la sesión 3.

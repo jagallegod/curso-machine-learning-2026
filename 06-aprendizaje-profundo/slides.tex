@@ -1,0 +1,758 @@
+\documentclass{beamer}
+
+\usepackage{soul}
+
+
+\usetheme{Boadilla}
+
+\setbeamersize{text margin left=1cm,text margin right=1cm}
+
+% DEFINITON FOOTLINE
+% here: empty
+\setbeamertemplate{footline}
+{%
+\begin{beamercolorbox}{}
+\end{beamercolorbox}%
+}
+
+
+\usepackage[english]{babel}
+\usepackage[latin1]{inputenc}
+\usepackage{color}
+\usepackage{graphicx}
+\graphicspath{{img/}}
+\usepackage{setspace}
+%\usepackage[pdftex]{graphicx}
+
+%TABELLEN
+\usepackage{array}
+%\usepackage{ctable}		%Tabellen mit Fussoten
+\usepackage{multirow}
+\usepackage{booktabs}
+	% Neue Tabellenbefehle in der array Umgebung
+	\renewcommand{\arraystretch}{1.2} % Zeilenabstand
+	\newcolumntype{C}[1]{>{\centering\let\\\tabularnewline}p{#1}}
+	\newcolumntype{R}[1]{>{\raggedleft\let\\\tabularnewline}p{#1}}
+	\newcolumntype{L}[1]{>{\raggedright\let\\\tabularnewline}p{#1}}
+
+\setbeamercovered{transparent}
+
+
+\title{Aprendizaje profundo (\textit{Deep Learning})}
+\author{Jorge Gallego}
+\institute{Inter-American Development Bank}
+
+\date{Bogotá Summer School in Economics --- 2026}
+
+\begin{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\frame{\titlepage}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Agenda de la sesión}
+
+\begin{itemize}
+\item La última frontera del curso: el \textbf{aprendizaje profundo} \vspace{0.3cm}
+
+\begin{itemize}
+\item[1.] Redes neuronales artificiales (ANNs)
+\item[2.] Redes convolucionales (CNNs) --- imágenes
+\item[3.] Redes recurrentes (RNNs) --- secuencias
+\end{itemize}
+\vspace{0.3cm}
+
+\item Las ANNs las haremos en R (\texttt{neuralnet}); las CNN/RNN las veremos con \textbf{keras} (para correr en Google Colab)
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%   PARTE 1: ANNs   %%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+\begin{center}
+{\Huge \textbf{Parte 1}}\\[0.5cm]
+{\large Redes neuronales artificiales}
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Inspiración: el cerebro}
+
+\begin{itemize}
+\item El cerebro es una red de \textbf{neuronas} interconectadas, un procesador paralelo masivo \vspace{0.3cm}
+
+\item Cada neurona capta señales, las procesa y, si superan un \textbf{umbral}, emite una señal \vspace{0.3cm}
+
+\item Las \textbf{redes neuronales artificiales} imitan esa relación entre señales de entrada y de salida
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Neuronas biológicas}
+
+\begin{figure}
+\includegraphics[width=0.7\textwidth]{neuron.pdf}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Neuronas artificiales}
+
+\begin{figure}
+\includegraphics[width=0.72\textwidth]{artificialneuron.pdf}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Neuronas artificiales}
+
+Una neurona con $n$ entradas se representa como:
+\[
+y(x) = f\!\left(\sum_{i=1}^n w_i x_i\right)
+\]
+
+\begin{itemize}
+\item Cada entrada $x_i$ se pondera por un \textbf{peso} $w_i$ (su importancia) \vspace{0.3cm}
+
+\item La \textbf{función de activación} $f(\cdot)$ decide la señal de salida a partir de la suma ponderada
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Tres componentes de una red}
+
+\begin{itemize}
+\item[1.] \textbf{Función de activación}: transforma la suma de entradas en una salida \vspace{0.3cm}
+
+\item[2.] \textbf{Topología}: número de neuronas, de capas, y cómo se conectan \vspace{0.3cm}
+
+\item[3.] \textbf{Algoritmo de entrenamiento}: cómo se fijan los pesos de las conexiones
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Funciones de activación}
+
+\begin{columns}
+\begin{column}{0.5\textwidth}
+\begin{itemize}
+\item La biológica es casi dicotómica: se cruza el umbral o no
+\end{itemize}
+\includegraphics[width=\textwidth]{onestep.pdf}
+\end{column}
+\begin{column}{0.5\textwidth}
+\begin{itemize}
+\item Las artificiales son \textbf{suaves} y diferenciables (útil para optimizar): sigmoide, tanh, ReLU
+\end{itemize}
+\includegraphics[width=\textwidth]{activaciones.pdf}
+\end{column}
+\end{columns}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Función sigmoidal}
+
+\begin{columns}
+\begin{column}{0.5\textwidth}
+\begin{itemize}
+\item Salida continua entre 0 y 1 \vspace{0.2cm}
+\item Diferenciable (clave para entrenar) \vspace{0.2cm}
+\item Muy popular; hoy ReLU domina en redes profundas
+\end{itemize}
+\end{column}
+\begin{column}{0.5\textwidth}
+\includegraphics[width=\textwidth]{sigmoidal.pdf}
+\end{column}
+\end{columns}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Topología: capas}
+
+\begin{itemize}
+\item Las neuronas se organizan en \textbf{capas}: una de \textbf{entrada}, una de \textbf{salida}, y posibles capas \textbf{ocultas} \vspace{0.3cm}
+
+\item Cada nodo de entrada procesa una característica; el de salida produce la predicción \vspace{0.3cm}
+
+\item La versión más simple tiene una sola capa
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Red de una sola capa}
+
+\begin{figure}
+\includegraphics[width=0.7\textwidth]{singlelayer.pdf}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Redes multicapa}
+
+\begin{itemize}
+\item Las capas \textbf{ocultas} procesan las señales antes de la salida; suelen estar totalmente conectadas
+\end{itemize}
+
+\begin{figure}
+\includegraphics[width=0.62\textwidth]{multilayer.pdf}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Deep learning}
+
+\begin{columns}
+\begin{column}{0.5\textwidth}
+\begin{itemize}
+\item Una red con \textbf{muchas capas ocultas} es una \textbf{red neuronal profunda} \vspace{0.2cm}
+\item Entrenarla es \textit{deep learning} \vspace{0.2cm}
+\item Brilla con datos \textbf{no estructurados}: imágenes, sonido, texto
+\end{itemize}
+\end{column}
+\begin{column}{0.5\textwidth}
+\includegraphics[width=\textwidth]{multiplelayers.pdf}
+\end{column}
+\end{columns}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{¿Cuántos nodos y capas?}
+
+\begin{itemize}
+\item Los nodos de \textbf{entrada} los fija el número de características; los de \textbf{salida}, el problema \vspace{0.3cm}
+
+\item Los nodos \textbf{ocultos} los elige el usuario: no hay regla teórica \vspace{0.3cm}
+
+\item Más capacidad $\rightarrow$ puede aprender relaciones más complejas... \vspace{0.3cm}
+
+\item ...pero mayor riesgo de \textbf{sobreajuste} (de nuevo, el sesgo-varianza)
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Entrenamiento: backpropagation}
+
+\begin{itemize}
+\item Se parte de pesos \textbf{aleatorios} y se itera en ciclos (\textit{épocas}), cada uno con dos fases: \vspace{0.2cm}
+
+\begin{itemize}
+\item[1.] \textbf{Hacia adelante}: se activan las neuronas de la entrada a la salida y se produce una predicción
+\item[2.] \textbf{Hacia atrás}: se compara con el valor real y el \textbf{error} se propaga para ajustar los pesos
+\end{itemize}
+\vspace{0.2cm}
+
+\item El ajuste usa \textbf{descenso de gradiente}: mover los pesos en la dirección que más reduce el error
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Al taller}
+
+\begin{itemize}
+\item Predeciremos el \textbf{gasto médico anual} de un asegurado a partir de sus características (economía de la salud) \vspace{0.3cm}
+
+\item Base \texttt{insurance.csv}, con el paquete \texttt{neuralnet} (el mismo problema que vimos con regresión en S3) \vspace{0.3cm}
+
+\item Compararemos una red con 1 nodo oculto contra una con 5 \vspace{0.3cm}
+
+\item (Este taller \textbf{sí} corre en R sin configuración adicional)
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%   PARTE 2: CNNs   %%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+\begin{center}
+{\Huge \textbf{Parte 2}}\\[0.5cm]
+{\large Redes convolucionales (CNNs)}
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{¿Por qué redes especiales para imágenes?}
+
+\begin{itemize}
+\item Una imagen pequeña ($100\times100$) ya tiene 10.000 píxeles \vspace{0.3cm}
+
+\item Una red \textbf{densa} necesitaría millones de pesos: no escala y sobreajusta \vspace{0.3cm}
+
+\item Además, ignoraría la \textbf{estructura espacial}: píxeles vecinos están relacionados \vspace{0.3cm}
+
+\item Las \textbf{CNN} aprovechan esa estructura local
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Una imagen es una matriz de números}
+
+\begin{columns}
+\begin{column}{0.5\textwidth}
+\begin{itemize}
+\item Cada \textbf{píxel} es un número (su intensidad) \vspace{0.2cm}
+\item A color son \textbf{3 matrices} (canales rojo, verde, azul) \vspace{0.2cm}
+\item Una imagen $=$ un \textbf{tensor} alto $\times$ ancho $\times$ canales
+\end{itemize}
+\end{column}
+\begin{column}{0.5\textwidth}
+\includegraphics[width=\textwidth]{image_pixels.pdf}
+\end{column}
+\end{columns}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{La convolución}
+
+\begin{itemize}
+\item Un \textbf{filtro} (pequeña matriz de pesos) recorre la imagen y detecta un patrón local (un borde, una textura)
+\end{itemize}
+
+\begin{figure}
+\includegraphics[width=0.74\textwidth]{convolution.pdf}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{La convolución, en detalle}
+
+\begin{itemize}
+\item En cada posición, el filtro multiplica \textbf{punto a punto} con la ventana y \textbf{suma}: un solo número
+\end{itemize}
+
+\begin{figure}
+\includegraphics[width=0.85\textwidth]{conv_detail.pdf}
+\end{figure}
+
+\begin{itemize}
+\item Al deslizarse por toda la imagen, produce un \textbf{mapa de características}
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Filtros y parámetros compartidos}
+
+\begin{itemize}
+\item Cada filtro produce un \textbf{mapa de características}: dónde aparece ese patrón \vspace{0.3cm}
+
+\item Los pesos del filtro \textbf{se aprenden} (no se diseñan a mano) \vspace{0.3cm}
+
+\item El \textbf{mismo} filtro se usa en toda la imagen: \textbf{comparte parámetros} \vspace{0.2cm}
+\begin{itemize}
+\item muchísimos menos pesos que una red densa
+\item detecta el patrón \textbf{esté donde esté} (invarianza a traslación)
+\end{itemize}
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Una jerarquía de características}
+
+\begin{figure}
+\includegraphics[width=0.95\textwidth]{feature_hierarchy.pdf}
+\end{figure}
+
+\begin{itemize}
+\item Al apilar capas, la red aprende sola: de \textbf{bordes} a \textbf{partes} a \textbf{objetos} completos
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Pooling}
+
+\begin{columns}
+\begin{column}{0.5\textwidth}
+\begin{itemize}
+\item Resume regiones (p. ej. el \textbf{máximo} de cada vecindad $2\times2$) \vspace{0.2cm}
+\item Reduce el tamaño (menos cómputo) \vspace{0.2cm}
+\item Da \textbf{invarianza}: el patrón se detecta aunque se mueva un poco
+\end{itemize}
+\end{column}
+\begin{column}{0.5\textwidth}
+\includegraphics[width=\textwidth]{pooling.pdf}
+\end{column}
+\end{columns}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Arquitectura de una CNN}
+
+\begin{figure}
+\includegraphics[width=0.95\textwidth]{cnn_diagram.pdf}
+\end{figure}
+
+\begin{itemize}
+\item Bloques de \textbf{convolución + pooling} extraen características; al final, capas \textbf{densas} clasifican
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Ingredientes que faltan}
+
+\begin{itemize}
+\item \textbf{ReLU} como activación: rápida y evita que los gradientes se desvanezcan \vspace{0.3cm}
+
+\item \textbf{Softmax} en la última capa: convierte la salida en probabilidades por clase \vspace{0.3cm}
+
+\item \textbf{Dropout}: apagar neuronas al azar durante el entrenamiento, para \textbf{regularizar} y combatir el sobreajuste
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Arquitecturas famosas y \textit{transfer learning}}
+
+\begin{itemize}
+\item Hitos: LeNet (dígitos), \textbf{AlexNet} (2012, el ``big bang'' del deep learning), VGG, ResNet \vspace{0.3cm}
+
+\item \textbf{Transfer learning}: tomar una red ya entrenada en millones de imágenes y \textbf{reajustarla} a tu problema \vspace{0.3cm}
+
+\item Permite obtener buenos resultados con \textbf{pocos datos} propios: hoy es la práctica habitual
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Aplicaciones}
+
+\begin{itemize}
+\item Reconocimiento de objetos y rostros \vspace{0.3cm}
+
+\item Diagnóstico por imágenes médicas (rayos X, resonancias) \vspace{0.3cm}
+
+\item Carros autónomos, imágenes satelitales (deforestación, cultivos) \vspace{0.3cm}
+
+\item \textbf{Al taller}: clasificar dígitos escritos a mano con la base \textbf{MNIST} (en \texttt{keras})
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%   PARTE 3: RNNs   %%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+\begin{center}
+{\Huge \textbf{Parte 3}}\\[0.5cm]
+{\large Redes recurrentes (RNNs)}
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Datos secuenciales}
+
+\begin{itemize}
+\item Muchos datos son \textbf{secuencias} donde el \textbf{orden} importa: \vspace{0.2cm}
+\begin{itemize}
+\item texto (una palabra depende de las anteriores)
+\item series de tiempo (precios, clima)
+\item audio, video
+\end{itemize}
+\vspace{0.3cm}
+
+\item Una red normal trata cada entrada por separado: no tiene \textbf{memoria} del pasado
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{La idea: recurrencia y memoria}
+
+\begin{columns}
+\begin{column}{0.5\textwidth}
+\begin{itemize}
+\item Una \textbf{RNN} tiene conexiones que vuelven hacia atrás (\textit{loops}) \vspace{0.2cm}
+\item Mantiene un \textbf{estado} que resume lo visto hasta ahora \vspace{0.2cm}
+\item Así incorpora \textbf{memoria} de corto plazo
+\end{itemize}
+\end{column}
+\begin{column}{0.5\textwidth}
+\includegraphics[width=\textwidth]{recurrent.pdf}
+\end{column}
+\end{columns}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Una RNN desplegada en el tiempo}
+
+\begin{figure}
+\includegraphics[width=0.88\textwidth]{rnn_unrolled.pdf}
+\end{figure}
+
+\begin{itemize}
+\item En cada paso $t$ entra $x_t$, se actualiza el estado $h_t$ (usando $h_{t-1}$) y se produce $y_t$
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{¿Cómo procesa una RNN?}
+
+\begin{itemize}
+\item En cada paso combina la entrada $x_t$ con el estado previo $h_{t-1}$:
+\[
+h_t = f\!\left(W\,x_t + U\,h_{t-1} + b\right)
+\]
+
+\item El estado $h_t$ \textbf{resume} todo lo visto hasta el momento (la memoria) \vspace{0.3cm}
+
+\item Los \textbf{mismos} pesos ($W$, $U$) se reutilizan en cada paso: comparte parámetros \textbf{en el tiempo} (como el filtro de la CNN lo hace en el espacio)
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Tipos de tareas secuenciales}
+
+\begin{figure}
+\includegraphics[width=0.98\textwidth]{rnn_task_types.pdf}
+\end{figure}
+
+\begin{itemize}
+\item La misma idea sirve para clasificar, traducir/etiquetar o generar secuencias
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{El gradiente que se desvanece}
+
+\begin{itemize}
+\item Para entrenar, el error se propaga muchos pasos \textbf{hacia atrás en el tiempo} \vspace{0.3cm}
+
+\item Al multiplicarse paso tras paso, los gradientes tienden a \textbf{encogerse} (o explotar) \vspace{0.3cm}
+
+\item Resultado: la red ``olvida'' lo lejano y le cuesta aprender \textbf{dependencias largas} \vspace{0.3cm}
+
+\item Es el problema que motivó a las LSTM
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{LSTM y GRU}
+
+\begin{itemize}
+\item Las \textbf{LSTM} añaden una \textbf{celda de memoria} con ``compuertas'' que deciden qué recordar y qué olvidar \vspace{0.3cm}
+
+\item Así manejan mucho mejor las dependencias de \textbf{largo plazo} \vspace{0.3cm}
+
+\item Las \textbf{GRU} son una versión más simple, con menos compuertas \vspace{0.3cm}
+
+\item Son el estándar cuando se usan RNN en la práctica
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{LSTM: las compuertas}
+
+\begin{figure}
+\includegraphics[width=0.8\textwidth]{lstm_gates.pdf}
+\end{figure}
+
+\begin{itemize}
+\item \textbf{Olvidar} (qué borrar), \textbf{entrada} (qué guardar), \textbf{salida} (qué emitir): regulan el flujo de la memoria
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Atención}
+
+\begin{columns}
+\begin{column}{0.48\textwidth}
+\begin{itemize}
+\item En vez de comprimir todo en un estado, la \textbf{atención} deja que cada elemento ``mire'' directamente a los relevantes \vspace{0.2cm}
+\item Cada palabra \textbf{pondera} cuánto atiende a las demás
+\end{itemize}
+\end{column}
+\begin{column}{0.52\textwidth}
+\includegraphics[width=\textwidth]{attention_concept.pdf}
+\end{column}
+\end{columns}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Transformers y modelos de lenguaje}
+
+\begin{itemize}
+\item Los \textbf{Transformers} reemplazan la recurrencia por pura \textbf{atención} \vspace{0.3cm}
+
+\item Procesan toda la secuencia \textbf{en paralelo}: más rápido y mejor con dependencias largas \vspace{0.3cm}
+
+\item Son la base de los grandes \textbf{modelos de lenguaje} (la ``T'' de ChatGPT) \vspace{0.3cm}
+
+\item Su punto de entrada son los \textbf{embeddings} (sesión 5): el texto convertido en vectores
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Aplicaciones y al taller}
+
+\begin{itemize}
+\item Traducción automática, generación de texto, reconocimiento de voz \vspace{0.3cm}
+
+\item Pronóstico de series de tiempo \vspace{0.3cm}
+
+\item \textbf{Al taller}: clasificar reseñas de cine como positivas/negativas con la base \textbf{IMDB}, usando una capa de \textit{embedding} + una \textbf{LSTM} (en \texttt{keras})
+
+\end{itemize}
+}
+
+\frame{
+  \frametitle{¿Cuándo (y cuándo no) usar deep learning?}
+
+\begin{itemize}
+\item Brilla con \textbf{muchos datos} y entradas \textbf{no estructuradas} (imágenes, texto, audio, video) \vspace{0.3cm}
+
+\item Para datos \textbf{tabulares} y muestras \textbf{pequeñas}, métodos como regresión, árboles o \textit{boosting} (XGBoost) suelen igualar o superar al DL, y son más rápidos e interpretables \vspace{0.3cm}
+
+\item Costos del DL: mucho \textbf{cómputo}, muchos \textbf{datos}, y es una \textbf{caja negra} \vspace{0.3cm}
+
+\item Regla práctica: empieza simple y usa DL cuando el problema y los datos lo justifiquen
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Herramientas y cómputo}
+
+\begin{itemize}
+\item \textit{Frameworks} más usados hoy: \textbf{TensorFlow/Keras} y \textbf{PyTorch} \vspace{0.3cm}
+
+\item El entrenamiento se hace en \textbf{GPUs} (mucho más rápido que en CPU) \vspace{0.3cm}
+
+\item Por eso, para los talleres de CNN/RNN usaremos \textbf{Google Colab}, que ofrece GPU gratis y ya trae todo instalado \vspace{0.3cm}
+
+\item Y aprovecharemos modelos \textbf{preentrenados} (\textit{transfer learning}) cuando se pueda
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%   CIERRE   %%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Resumen de la sesión}
+
+\begin{itemize}
+\item Las \textbf{ANNs} imitan neuronas: suma ponderada + activación, en capas, entrenadas con \textit{backpropagation} \vspace{0.3cm}
+
+\item \textbf{CNNs}: convolución (parámetros compartidos) + pooling para \textbf{imágenes}; jerarquía de características \vspace{0.3cm}
+
+\item \textbf{RNNs} (y LSTM): memoria para \textbf{secuencias}; la \textbf{atención} y los \textbf{Transformers} son el presente del área
+
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Cierre del curso}
+
+En seis sesiones recorrimos:
+
+\begin{itemize}
+\item[I.] Clasificación: KNN, Naive Bayes, SVM, árboles \vspace{0.2cm}
+\item[II.] Predicción numérica: regresión, Ridge, Lasso \vspace{0.2cm}
+\item[III.] Desempeño: evaluación, variables, desbalance, ensamblaje \vspace{0.2cm}
+\item[IV.] No supervisado: clustering, anomalías, representación \vspace{0.2cm}
+\item[V.] Aprendizaje profundo: ANNs, CNNs, RNNs
+\end{itemize}
+\vspace{0.3cm}
+
+\begin{center}
+\textit{¡Gracias!}
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{document}

@@ -1,0 +1,24 @@
+# LaTeX auxiliares
+*.aux
+*.log
+*.nav
+*.snm
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+
+# R
+.Rhistory
+.RData
+.Rproj.user/
+Rplots.pdf
+*_files/
+
+# macOS
+.DS_Store
+
+# temporales de build
+_render_all.R
+_*.R
