@@ -78,4 +78,3 @@ Curso introductorio y aplicado de *machine learning* para economía y políticas
 
 ---
 
-*Slides en LaTeX/Beamer; talleres en R Markdown. El código que genera las figuras de cada sesión está en los archivos `figuras_*.R`.*
