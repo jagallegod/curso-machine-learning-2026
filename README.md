@@ -5,6 +5,8 @@ Profesor: **Jorge Gallego** · Banco Interamericano de Desarrollo · `jagallegod
 
 Curso introductorio y aplicado de *machine learning* para economía y políticas públicas (18 horas, 6 sesiones). Cada sesión incluye una presentación conceptual (**slides** en PDF) y uno o varios **talleres prácticos** en R.
 
+📄 **[Syllabus del curso (PDF)](syllabus.pdf)**
+
 ## Cómo usar este repositorio
 
 - **Slides**: PDF (se abren directamente en GitHub).
@@ -72,7 +74,7 @@ Curso introductorio y aplicado de *machine learning* para economía y políticas
 - Lantz, B. (2015). *Machine Learning with R*. Packt Publishing. *(base de los talleres)*
 - James, G., Witten, D., Hastie, T. y Tibshirani, R. (2013). *An Introduction to Statistical Learning*. Springer.
 - Hastie, T., Tibshirani, R. y Friedman, J. (2009). *The Elements of Statistical Learning*. Springer.
-- Chollet, F. (2021). *Deep Learning with Python* (2.ª ed.). Manning.
+- Chollet, F. y Allaire, J. J. (2018). *Deep Learning with R*. Manning.
 
 ---
 

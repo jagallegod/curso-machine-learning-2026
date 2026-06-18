@@ -1,0 +1,112 @@
+\documentclass[11pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-noshorthands]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\definecolor{enlace}{HTML}{2B7A9B}
+\hypersetup{colorlinks=true, urlcolor=enlace, linkcolor=enlace, citecolor=enlace}
+\usepackage{parskip}
+
+\setlist{itemsep=2pt, topsep=4pt}
+
+\begin{document}
+
+\thispagestyle{empty}
+
+\begin{center}
+{\large\bfseries Aprendizaje de máquinas y análisis de datos}\\[4pt]
+Bogotá Summer School in Economics --- 2026\\[3pt]
+Profesor: Jorge Gallego \ $|$ \ Banco Interamericano de Desarrollo \ $|$ \ \href{mailto:jandresg@iadb.org}{jandresg@iadb.org}
+\end{center}
+
+\vspace{4pt}
+\hrule
+\vspace{10pt}
+
+\section*{1. Introducción}
+
+Las técnicas de aprendizaje automático (\textit{machine learning}) se han consolidado como herramientas fundamentales para el análisis de datos en la era del \textit{big data}. Su impacto trasciende el sector tecnológico y se aplica en múltiples ámbitos. Desde la evaluación de riesgo crediticio y la detección temprana de enfermedades hasta la predicción del crimen y el análisis de deserción estudiantil, el aprendizaje automático impulsa decisiones basadas en datos con un alto grado de precisión y eficiencia.
+
+En este curso, exploraremos las principales técnicas de aprendizaje supervisado, aplicando modelos predictivos a diversos problemas empíricos. En la segunda parte, abordaremos el aprendizaje no supervisado, analizando métodos para la segmentación de datos, detección de anomalías y reducción de dimensionalidad. Finalmente, en la tercera parte, profundizaremos en el aprendizaje profundo (\textit{deep learning}), explorando arquitecturas avanzadas de redes neuronales y sus aplicaciones en problemas complejos de análisis de datos.
+
+\section*{2. Metodología}
+
+Este curso de 18 horas será teórico-práctico, con presentaciones magistrales en las que el profesor expondrá los principales conceptos estadísticos y matemáticos subyacentes a estas técnicas, seguidas de talleres prácticos en los que se enseñará a los estudiantes a resolver problemas de política pública concretos. Para tal propósito, en el curso usaremos el lenguaje estadístico R y el entorno RStudio, e introduciremos los conocimientos básicos necesarios para aplicar las técnicas que estudiaremos en el curso. Todos los materiales del curso se encontrarán en un repositorio de GitHub \url{https://github.com/jagallegod/curso-machine-learning-2026}.
+
+\section*{3. Contenido}
+
+\begin{enumerate}[label=\Roman*., leftmargin=*, itemsep=4pt]
+  \item \textbf{Aprendizaje supervisado: clasificación}
+  \begin{enumerate}[label=\alph*.]
+    \item Introducción
+    \item Clasificación usando vecinos más cercanos
+    \item Aprendizaje probabilístico: Naive Bayes
+    \item Support Vector Machines
+    \item Árboles de decisión
+  \end{enumerate}
+
+  \item \textbf{Aprendizaje supervisado: predicción numérica}
+  \begin{enumerate}[label=\alph*.]
+    \item Regresión
+    \item Ridge
+    \item Lasso
+  \end{enumerate}
+
+  \item \textbf{Desempeño de modelos}
+  \begin{enumerate}[label=\alph*.]
+    \item Evaluación y mejoramiento del desempeño
+    \item Feature extraction, selection y engineering
+    \item Importancia de variables
+    \item Desbalance de clase
+    \item Ensamblaje de modelos y overfitting
+  \end{enumerate}
+
+  \item \textbf{Aprendizaje no supervisado}
+  \begin{enumerate}[label=\alph*.]
+    \item Introducción
+    \item Clustering
+    \item Detección de anomalías
+    \item Aprendizaje de representación y embeddings
+  \end{enumerate}
+
+  \item \textbf{Aprendizaje profundo}
+  \begin{enumerate}[label=\alph*.]
+    \item Introducción
+    \item Redes neuronales artificiales (ANNs)
+    \item Redes neuronales convolucionales (CNNs)
+    \item Redes neuronales recurrentes (RNNs)
+  \end{enumerate}
+\end{enumerate}
+
+\section*{4. Políticas del curso}
+
+\begin{itemize}[leftmargin=*]
+  \item Se espera que los estudiantes realicen las lecturas asignadas antes de clase.
+  \item Se espera participación activa durante las clases.
+\end{itemize}
+
+\section*{5. Bibliografía}
+
+\begin{itemize}[leftmargin=*, itemsep=3pt]
+  \item Abadi, M. et al. (2016). \textit{TensorFlow: Large-Scale Machine Learning on Heterogeneous Distributed Systems}. \url{https://www.tensorflow.org/}
+  \item Boehmke, B. y B. Greenwell (2020). \textit{Hands-On Machine Learning with R}. Chapman \& Hall/CRC.
+  \item Chollet, F. y J. J. Allaire (2018). \textit{Deep Learning with R}. Manning Publications.
+  \item Conway, D. y J. Myles (2012). \textit{Machine Learning for Hackers}. O'Reilly Media.
+  \item Hastie, T., R. Tibshirani y J. Friedman (2009). \textit{The Elements of Statistical Learning}. Springer.
+  \item James, G., D. Witten, T. Hastie y R. Tibshirani (2013). \textit{An Introduction to Statistical Learning}. Springer.
+  \item Kuhn, M. y K. Johnson (2013). \textit{Applied Predictive Modeling}. Springer.
+  \item Kuhn, M. y J. Silge (2022). \textit{Tidy Modeling with R}. O'Reilly Media.
+  \item Lantz, B. (2015). \textit{Machine Learning with R}. Packt Publishing.
+  \item Matloff, N. (2011). \textit{The Art of R Programming}. No Starch Press.
+  \item Russell, S. y P. Norvig (2020). \textit{Inteligencia Artificial: Un Enfoque Moderno}. Pearson Educación.
+  \item Siegel, E. (2013). \textit{Predictive Analytics}. John Wiley \& Sons.
+  \item Wickham, H. y G. Grolemund (2017). \textit{R for Data Science}. O'Reilly Media.
+  \item Zhang, A., Z. C. Lipton, M. Li y A. J. Smola (2021). \textit{Dive into Deep Learning}. \url{https://d2l.ai/}
+  \item Zumel, N. y J. Mount (2014). \textit{Practical Data Science with R}. Manning Publications.
+\end{itemize}
+
+\end{document}
