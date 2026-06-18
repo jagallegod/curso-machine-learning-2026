@@ -10,7 +10,7 @@ Curso introductorio y aplicado de *machine learning* para economía y políticas
 ## Cómo usar este repositorio
 
 - **Slides**: PDF (se abren directamente en GitHub).
-- **Talleres**: cuadernos de R (`.Rmd`) tejidos a **HTML interactivo**. Los enlaces "(taller)" abren el HTML renderizado vía `htmlpreview`; el código fuente `.Rmd` está en la misma carpeta.
+- **Talleres**: cuadernos de R (`.Rmd`) tejidos a **HTML interactivo**. 
 - **Datos**: bases en formato `.csv` dentro de la carpeta `data/` de cada sesión.
 
 > **Para correr los talleres**: necesitas [R](https://cran.r-project.org/) y [RStudio](https://posit.co/download/rstudio-desktop/). Cada taller indica los paquetes que usa (`install.packages(...)`). 
