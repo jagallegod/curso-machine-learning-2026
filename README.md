@@ -1,7 +1,7 @@
 # Aprendizaje de Máquinas y Análisis de Datos
 
 **Bogotá Summer School in Economics — 2026 · Pontificia Universidad Javeriana**
-Profesor: **Jorge Gallego** · Banco Interamericano de Desarrollo · `jandresg@iadb.org`
+Profesor: **Jorge Gallego** · Banco Interamericano de Desarrollo · `jagallegod@gmail.com`
 
 Curso introductorio y aplicado de *machine learning* para economía y políticas públicas (18 horas, 6 sesiones). Cada sesión incluye una presentación conceptual (**slides** en PDF) y uno o varios **talleres prácticos** en R.
 
