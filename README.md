@@ -11,7 +11,7 @@ Curso introductorio y aplicado de *machine learning* para economía y políticas
 - **Talleres**: cuadernos de R (`.Rmd`) tejidos a **HTML interactivo**. Los enlaces "(taller)" abren el HTML renderizado vía `htmlpreview`; el código fuente `.Rmd` está en la misma carpeta.
 - **Datos**: bases en formato `.csv` dentro de la carpeta `data/` de cada sesión.
 
-> **Para correr los talleres**: necesitas [R](https://cran.r-project.org/) y [RStudio](https://posit.co/download/rstudio-desktop/). Cada taller indica los paquetes que usa (`install.packages(...)`). Los talleres de **CNN/RNN** (sesión 6) están pensados para **Google Colab** (requieren `keras`/TensorFlow); el de **Basket Analysis** requiere `install.packages("arules")`.
+> **Para correr los talleres**: necesitas [R](https://cran.r-project.org/) y [RStudio](https://posit.co/download/rstudio-desktop/). Cada taller indica los paquetes que usa (`install.packages(...)`). 
 
 ---
 
