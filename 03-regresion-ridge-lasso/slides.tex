@@ -487,4 +487,50 @@ RSS + \lambda \sum_{j=1}^p |\beta_j|
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% ===== CASO APLICADO (S3): Sisben IV =====
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Aplicación real en Colombia: Sisbén IV}
+
+\begin{itemize}
+\item ¿Cómo decide el Estado \textbf{quién recibe} subsidios y programas sociales? Necesita medir la capacidad económica de cada hogar \vspace{0.3cm}
+
+\item El \textbf{Sisbén} (administrado por el DNP) clasifica a los hogares para \textbf{focalizar} el gasto social \vspace{0.3cm}
+
+\item El reto: estimar el \textbf{ingreso} de un hogar a partir de variables observables (vivienda, educación, activos)
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Sisbén IV: los métodos}
+
+\begin{itemize}
+\item Es un \textbf{Proxy Means Test}: una \textbf{predicción de ingreso} con más de 300 variables \vspace{0.15cm}
+\item Sisbén IV lo estima con \textit{machine learning} (\textit{gradient boosting}); en el fondo, una regresión predictiva como las de hoy
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=0.62\textwidth]{caso.pdf}
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Sisbén IV: resultados y lección}
+
+\begin{itemize}
+\item Clasifica a los hogares en grupos (A, B, C, D) que ordenan el acceso a los programas \vspace{0.3cm}
+
+\item Es la \textbf{puerta de entrada} a buena parte de la política social del país \vspace{0.3cm}
+
+\item La calidad del modelo \textbf{afecta directamente} quién recibe ayuda: la predicción tiene consecuencias muy reales \vspace{0.4cm}
+
+\item {\footnotesize \textit{Fuente:} DNP --- Sisbén IV; documentación técnica del modelo de presunción de ingresos (\textit{Proxy Means Test}).}
+\end{itemize}
+}
+
 \end{document}

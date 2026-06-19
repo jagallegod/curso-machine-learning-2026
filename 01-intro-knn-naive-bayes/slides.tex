@@ -909,4 +909,50 @@ Con una tabla de frecuencias de 100 correos:
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% ===== CASO APLICADO (S1): Desercion escolar =====
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Aplicación real en Colombia: deserción estudiantil}
+
+\begin{itemize}
+\item La \textbf{deserción} escolar y universitaria es un problema central de política educativa: tiene costos para el estudiante, el sistema y el país \vspace{0.3cm}
+
+\item El Ministerio de Educación la monitorea con el \textbf{SPADIES} (Sistema para la Prevención de la Deserción en Educación Superior) \vspace{0.3cm}
+
+\item La idea: usar esos datos para \textbf{predecir} qué estudiantes están en riesgo \textit{antes} de que abandonen, y focalizar apoyos (tutorías, becas, acompañamiento)
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Deserción estudiantil: los métodos}
+
+\begin{itemize}
+\item Es un problema de \textbf{clasificación}: ¿el estudiante deserta o continúa? \vspace{0.15cm}
+\item Estudios con datos colombianos usan \textbf{kNN}, \textbf{Naive Bayes}, árboles y regresión logística --- justo lo que vimos hoy
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=0.6\textwidth]{caso.pdf}
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Deserción estudiantil: resultados y lección}
+
+\begin{itemize}
+\item Estos modelos alcanzan precisiones típicas del \textbf{70--85\%} al identificar estudiantes en riesgo \vspace{0.3cm}
+
+\item Las variables más predictivas suelen ser el \textbf{rendimiento académico} y el \textbf{apoyo financiero} \vspace{0.3cm}
+
+\item Permiten pasar de una reacción tardía a un \textbf{sistema de alerta temprana} \vspace{0.4cm}
+
+\item {\footnotesize \textit{Fuente:} estudios académicos con datos del SPADIES (Ministerio de Educación). Ejemplos ilustrativos de clasificación supervisada en política educativa.}
+\end{itemize}
+}
+
 \end{document}

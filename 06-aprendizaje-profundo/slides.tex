@@ -755,4 +755,50 @@ En seis sesiones recorrimos:
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% ===== CASO APLICADO (S6): FAC / FACSAT-1 =====
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Aplicación real en Colombia: FAC y FACSAT-1}
+
+\begin{itemize}
+\item La \textbf{Fuerza Aeroespacial Colombiana} (FAC) opera el satélite \textbf{FACSAT-1} \vspace{0.3cm}
+
+\item Problema de política: detectar \textbf{minería ilegal} a cielo abierto, que causa graves daños ambientales \vspace{0.3cm}
+
+\item Los datos son \textbf{imágenes satelitales} del territorio nacional
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{FACSAT-1: los métodos}
+
+\begin{itemize}
+\item Usa \textbf{redes neuronales convolucionales} (CNN) --- justo lo de hoy --- para reconocer patrones de minería en las imágenes \vspace{0.15cm}
+\item Se apoya en \textit{data augmentation} y super-resolución para mejorar las imágenes
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=0.92\textwidth]{caso.pdf}
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{FACSAT-1: resultados y lección}
+
+\begin{itemize}
+\item Identifica patrones de minería ilegal con una precisión reportada \textbf{superior al 70\%} \vspace{0.3cm}
+
+\item Muestra el poder del \textbf{deep learning} sobre imágenes para el monitoreo territorial \vspace{0.3cm}
+
+\item Contraste útil: otros sistemas del Estado (deforestación del IDEAM, cultivos de coca) \textbf{no} usan deep learning, sino métodos clásicos e interpretación visual \vspace{0.3cm}
+
+\item {\footnotesize \textit{Fuente:} Fuerza Aeroespacial Colombiana --- programa FACSAT (2021).}
+\end{itemize}
+}
+
 \end{document}

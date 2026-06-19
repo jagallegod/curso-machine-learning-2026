@@ -801,4 +801,50 @@ dist(x,y)=\sqrt{\sum_{i=1}^n (x_i-y_i)^2}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% ===== CASO APLICADO (S5): UIAF =====
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Aplicación real en Colombia: UIAF}
+
+\begin{itemize}
+\item La \textbf{UIAF} (Unidad de Información y Análisis Financiero) es la unidad de \textbf{inteligencia financiera} del país \vspace{0.3cm}
+
+\item Su misión: detectar \textbf{lavado de activos} y financiación del terrorismo en un océano de datos (miles de millones de registros) \vspace{0.3cm}
+
+\item No hay una etiqueta de ``culpable/inocente'': hay que encontrar lo \textbf{atípico} y las \textbf{redes} sospechosas
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{UIAF: los métodos}
+
+\begin{itemize}
+\item Tarea \textbf{no supervisada}: \textbf{detección de anomalías} (operaciones atípicas) y \textbf{análisis de redes} (nodos y conexiones) \vspace{0.15cm}
+\item Apoyada en cientos de \textit{tipologías} y miles de señales de alerta
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=0.6\textwidth]{caso.pdf}
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{UIAF: resultados y lección}
+
+\begin{itemize}
+\item Prioriza los \textbf{reportes de operación sospechosa} (ROS) que se remiten a la Fiscalía \vspace{0.3cm}
+
+\item La efectividad de esos reportes mejoró de forma notable al incorporar analítica de datos \vspace{0.3cm}
+
+\item Ejemplo claro de \textbf{aprendizaje no supervisado} al servicio de la lucha antilavado y anticorrupción \vspace{0.4cm}
+
+\item {\footnotesize \textit{Fuente:} UIAF (Ministerio de Hacienda); descripciones públicas de sus técnicas de minería de datos y análisis de redes.}
+\end{itemize}
+}
+
 \end{document}

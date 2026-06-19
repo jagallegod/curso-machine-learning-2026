@@ -776,4 +776,50 @@ El error esperado de predicción se descompone en:
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% ===== CASO APLICADO (S4): Preventing rather than punishing =====
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Aplicación real en Colombia: alerta temprana de corrupción}
+
+\begin{itemize}
+\item ¿Se puede \textbf{anticipar} la corrupción en la contratación pública, en vez de solo castigarla después? \vspace{0.3cm}
+
+\item Un estudio con datos de \textbf{SECOP} (más de 2 millones de contratos) construye un modelo de \textbf{alerta temprana} \vspace{0.3cm}
+
+\item Predice tres desenlaces: investigación de la \textbf{Contraloría}, incumplimiento del contrato e ineficiencias
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Alerta temprana: desempeño y desbalance}
+
+\begin{itemize}
+\item Usa \textbf{Lasso} y \textbf{gradient boosting}; los casos positivos son \textbf{raros} (clase muy desbalanceada) \vspace{0.15cm}
+\item Como lo que importa es \textbf{priorizar}, se evalúa con ROC/AUC y métricas de \textit{ranking} (MAP@k, NDCG)
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=0.5\textwidth]{caso.pdf}
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Alerta temprana: resultados y lección}
+
+\begin{itemize}
+\item El \textbf{gradient boosting} supera al Lasso (AUC entre \textbf{0.79 y 0.91}) \vspace{0.3cm}
+
+\item Permite ordenar los contratos por riesgo y concentrar la vigilancia donde más importa \vspace{0.3cm}
+
+\item Caso de manual para esta sesión: \textbf{desbalance}, \textbf{ensamblajes} (\textit{boosting}) y \textbf{métricas} más allá de la precisión \vspace{0.3cm}
+
+\item {\footnotesize \textit{Fuente:} Gallego, Rivero y Martínez (2021), ``Preventing rather than punishing: An early warning model of malfeasance in public procurement'', \textit{International Journal of Forecasting}, 37(1).}
+\end{itemize}
+}
+
 \end{document}

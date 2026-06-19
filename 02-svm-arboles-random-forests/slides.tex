@@ -715,4 +715,48 @@ Heurística: $m=\sqrt{p}$ variables por nodo (con $p$ variables en total).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% ===== CASO APLICADO (S2): Vigia =====
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Aplicación real en Colombia: Vigía}
+
+\begin{itemize}
+\item La \textbf{Veeduría Distrital de Bogotá} debe vigilar miles de procesos de \textbf{contratación pública}, pero los recursos de control son escasos \vspace{0.3cm}
+
+\item \textbf{Vigía} es una herramienta que ayuda a \textbf{priorizar} qué contratos vigilar, usando los datos de \textbf{SECOP II} \vspace{0.3cm}
+
+\item Predice ineficiencias del contrato: \textbf{sobrecostos} y \textbf{retrasos} en la entrega
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Vigía: los métodos}
+
+\begin{itemize}
+\item Usa \textbf{random forests} y \textbf{regresión logística}, elegidos por ser \textit{explicables} \vspace{0.15cm}
+\item Los combina con \textbf{índices de riesgo} (falta de competencia, de transparencia y anomalías)
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=0.7\textwidth]{caso.pdf}
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Vigía: resultados y lección}
+
+\begin{itemize}
+\item Genera un \textbf{ranking de riesgo}: la entidad concentra la vigilancia en los procesos más riesgosos \vspace{0.3cm}
+
+\item Muestra cómo el \textit{machine learning} puede hacer más \textbf{eficiente} el control de lo público \vspace{0.4cm}
+
+\item {\footnotesize \textit{Fuente:} Salazar, Pérez y Gallego (2024), ``Vigía: Prioritizing Public Procurement Oversight with Machine Learning Models and Risk Indices'', \textit{Data \& Policy} (Cambridge University Press).}
+\end{itemize}
+}
+
 \end{document}
