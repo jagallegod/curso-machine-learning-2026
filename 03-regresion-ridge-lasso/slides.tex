@@ -491,6 +491,31 @@ RSS + \lambda \sum_{j=1}^p |\beta_j|
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \frame{
+  \frametitle{Más allá de los modelos lineales}
+
+\begin{itemize}
+\item Para predecir un \textbf{número} no estamos limitados a modelos lineales (regresión, Ridge, Lasso) \vspace{0.25cm}
+\item \textbf{Árboles de regresión}: dividen los datos en grupos y predicen un valor por hoja; capturan relaciones no lineales \vspace{0.25cm}
+\item \textbf{Model trees}: árboles que ajustan una \textbf{regresión} en cada hoja \vspace{0.25cm}
+\item \textbf{Ensambles y boosting} (random forests, \textbf{XGBoost}): combinan muchos árboles y suelen dar la mejor predicción
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{¿Cuál elegir, y dónde se profundiza?}
+
+\begin{itemize}
+\item Regresión / Ridge / Lasso: \textbf{transparentes e interpretables}. Árboles y ensambles: \textbf{más flexibles y precisos}, pero menos interpretables \vspace{0.3cm}
+\item El \textit{trade-off} central: \textbf{simplicidad} vs. \textbf{flexibilidad}; pesa más cuando hay que \textbf{explicar} la decisión \vspace{0.3cm}
+\item \textbf{Dónde se profundiza:} árboles de regresión y \textit{model trees} en el \textbf{apéndice}; ensambles y \textit{boosting} en la \textbf{sesión 4} (árboles y random forests ya aparecieron en la \textbf{sesión 2})
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
   \frametitle{Aplicación real en Colombia: Sisbén IV}
 
 \begin{itemize}
@@ -508,12 +533,13 @@ RSS + \lambda \sum_{j=1}^p |\beta_j|
   \frametitle{Sisbén IV: los métodos}
 
 \begin{itemize}
-\item Es un \textbf{Proxy Means Test}: una \textbf{predicción de ingreso} con más de 300 variables \vspace{0.15cm}
-\item Sisbén IV lo estima con \textit{machine learning} (\textit{gradient boosting}); en el fondo, una regresión predictiva como las de hoy
+\item El \textbf{Proxy Means Test} es \textbf{predicción numérica}: estimar el ingreso a partir de muchas variables --- el problema de esta sesión \vspace{0.2cm}
+\item Con \textbf{300+ predictores}, la \textbf{regularización (Ridge/Lasso)} es la herramienta natural: evita sobreajuste y selecciona variables \vspace{0.2cm}
+\item Sisbén IV usa una variante más flexible (\textbf{gradient boosting}): mismo problema, modelo más complejo
 \end{itemize}
 
 \begin{center}
-\includegraphics[width=0.62\textwidth]{caso.pdf}
+\includegraphics[width=0.55\textwidth]{caso.pdf}
 \end{center}
 }
 
@@ -527,9 +553,9 @@ RSS + \lambda \sum_{j=1}^p |\beta_j|
 
 \item Es la \textbf{puerta de entrada} a buena parte de la política social del país \vspace{0.3cm}
 
-\item La calidad del modelo \textbf{afecta directamente} quién recibe ayuda: la predicción tiene consecuencias muy reales \vspace{0.4cm}
+\item Como el modelo decide \textbf{quién recibe ayuda}, la \textbf{transparencia} importa tanto como la precisión: por eso elegir entre regresión (interpretable) y boosting (flexible) no es trivial \vspace{0.3cm}
 
-\item {\footnotesize \textit{Fuente:} DNP --- Sisbén IV; documentación técnica del modelo de presunción de ingresos (\textit{Proxy Means Test}).}
+\item {\footnotesize \textit{Fuente:} DNP --- Sisbén IV; modelo de presunción de ingresos (\textit{Proxy Means Test}).}
 \end{itemize}
 }
 
