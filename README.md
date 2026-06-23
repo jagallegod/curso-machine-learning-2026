@@ -66,7 +66,7 @@ Curso introductorio y aplicado de *machine learning* para economía y políticas
 - **Fundamentos y gráficas en R** — [Fundamentos de R](https://htmlpreview.github.io/?https://github.com/jagallegod/curso-machine-learning-2026/blob/main/apendices/fundamentos-y-graficas-r/fundamentos_r.html) · [Programación básica y gráficas](https://htmlpreview.github.io/?https://github.com/jagallegod/curso-machine-learning-2026/blob/main/apendices/fundamentos-y-graficas-r/graficas_r.html)
 - **Árboles de regresión** — 📊 [Slides](apendices/regression-trees/slides.pdf) · [Taller (whitewines)](https://htmlpreview.github.io/?https://github.com/jagallegod/curso-machine-learning-2026/blob/main/apendices/regression-trees/taller_arboles_regresion.html)
 - **Reglas de asociación (Basket Analysis)** — 📊 [Slides](apendices/basket-analysis/slides.pdf) · [Taller (`.Rmd`)](apendices/basket-analysis/taller_basket.Rmd) · *requiere `install.packages("arules")`; teje el HTML desde RStudio*
-- **Large Language Models (LLMs)** — 📊 [Slides](apendices/large-language-models/slides.pdf) · 
+- **Large Language Models (LLMs)** — 📊 [Slides](apendices/large-language-models/slides.pdf) 
 
 ---
 
