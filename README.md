@@ -17,6 +17,16 @@ Curso introductorio y aplicado de *machine learning* para economía y políticas
 
 ---
 
+## Evaluación del curso
+
+La nota final se compone de tres pruebas:
+
+1. **Quiz — 33%.** Durante la **sesión 5**. Examen individual *a la antigua* (**lápiz y papel, sin ningún recurso**), enfocado en evaluar la comprensión de los **conceptos principales** de los modelos vistos en el curso.
+2. **Proyecto / *policy report* — 33%.** Trabajo para la casa: cada estudiante aplica las herramientas del curso a un problema real de **política pública**. Debe plantear una **pregunta** de evaluación/investigación, conseguir una **base de datos** para responderla, diseñar una **estrategia empírica** (usando uno o varios de los modelos del curso), **implementarla** y escribir un **reporte de política** con los resultados. Aquí **sí** se puede usar todo: material del curso, datos externos, LLMs, etc.
+3. **Sustentación — 34%.** Defensa **virtual** (videollamada) del proyecto, unos días después de la entrega, para verificar que cada estudiante **comprende a fondo** el trabajo entregado.
+
+---
+
 ## Contenido
 
 ### 1. Introducción, KNN y Naive Bayes
