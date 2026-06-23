@@ -1,0 +1,506 @@
+\documentclass{beamer}
+
+\usepackage{soul}
+
+
+\usetheme{Boadilla}
+
+\setbeamersize{text margin left=1cm,text margin right=1cm}
+
+% DEFINITON FOOTLINE
+% here: empty
+\setbeamertemplate{footline}
+{%
+\begin{beamercolorbox}{}
+\end{beamercolorbox}%
+}
+
+
+\usepackage[english]{babel}
+\usepackage[latin1]{inputenc}
+\usepackage{color}
+\usepackage{graphicx}
+\graphicspath{{img/}}
+\usepackage{setspace}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+%TABELLEN
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{booktabs}
+	\renewcommand{\arraystretch}{1.2}
+	\newcolumntype{C}[1]{>{\centering\let\\\tabularnewline}p{#1}}
+	\newcolumntype{R}[1]{>{\raggedleft\let\\\tabularnewline}p{#1}}
+	\newcolumntype{L}[1]{>{\raggedright\let\\\tabularnewline}p{#1}}
+
+\setbeamercovered{transparent}
+
+
+\title{Large Language Models}
+\author{Jorge Gallego}
+\institute{Inter-American Development Bank}
+
+\date{Bogotá Summer School in Economics --- 2026}
+
+\begin{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\frame{\titlepage}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Agenda de la sesión}
+
+\begin{itemize}
+\item Cerramos el curso con el tema que hoy domina: los \textbf{Large Language Models} (LLMs) \vspace{0.3cm}
+\item[1.] ¿Qué son y por qué ahora?
+\item[2.] De texto a números: tokens y embeddings
+\item[3.] De las RNN a los Transformers
+\item[4.] ¿Cómo se entrena un LLM?
+\item[5.] De modelo base a asistente
+\item[6.] Cómo se usa (sin reentrenar)
+\item[7.] Límites, riesgos y política pública
+\end{itemize}
+\vspace{0.2cm}
+\footnotesize Construye sobre lo visto en S5 (embeddings) y S6 (redes neuronales, RNN, atención).
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%   PARTE 1   %%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+\begin{center}
+{\Huge \textbf{Parte 1}}\\[0.5cm]
+{\large ¿Qué son y por qué ahora?}
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{¿Qué es un LLM?}
+
+\begin{itemize}
+\item Un \textbf{modelo de lenguaje} es, en esencia, un sistema que \textbf{predice texto}: dado lo anterior, ¿qué palabra sigue? \vspace{0.3cm}
+\item Un LLM es uno \textbf{muy grande}, entrenado con cantidades enormes de texto (libros, web, código\ldots) \vspace{0.3cm}
+\item Ejemplos: ChatGPT, Claude, Gemini, Llama \vspace{0.3cm}
+\item La sorpresa: predecir bien la siguiente palabra, a esta escala, produce algo que \textit{parece} entender y razonar
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{¿Por qué explotaron justo ahora?}
+
+\begin{itemize}
+\item No es magia nueva: es la combinación de tres ingredientes que maduraron juntos \vspace{0.3cm}
+\item[1.] \textbf{Arquitectura}: el \textit{Transformer} (2017), que escala muy bien \vspace{0.2cm}
+\item[2.] \textbf{Datos}: prácticamente todo el texto digitalizado \vspace{0.2cm}
+\item[3.] \textbf{Cómputo}: GPUs masivas para entrenar modelos gigantes \vspace{0.3cm}
+\item Resultado: un salto enorme en pocos años (de autocompletar torpe a asistentes conversacionales)
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{La idea central}
+
+\begin{itemize}
+\item Todo se reduce a una tarea sorprendentemente simple: \vspace{0.3cm}
+\begin{center}
+\textit{predecir la siguiente palabra, una y otra vez}
+\end{center}
+\vspace{0.3cm}
+\item El modelo genera texto de forma \textbf{autoregresiva}: predice una palabra, la agrega, y vuelve a predecir \vspace{0.3cm}
+\item Toda la conversación, el resumen o el código surgen de repetir ese paso
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Conexión con el curso}
+
+\begin{itemize}
+\item Un LLM \textbf{no} es un tema aparte: es \textit{machine learning} llevado al extremo \vspace{0.25cm}
+\item Es una \textbf{red neuronal profunda} (S6), entrenada para una tarea de \textbf{predicción} (clasificar la siguiente palabra entre miles) \vspace{0.25cm}
+\item Usa \textbf{representaciones} aprendidas de las palabras (embeddings, S5) \vspace{0.25cm}
+\item Se ajusta minimizando una \textbf{función de pérdida} (S3, S4)
+\item[] \footnotesize \textit{Mismos principios, escala distinta.}
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%   PARTE 2   %%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+\begin{center}
+{\Huge \textbf{Parte 2}}\\[0.5cm]
+{\large De texto a números: tokens y embeddings}
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Las máquinas no leen palabras}
+
+\begin{itemize}
+\item Un modelo solo opera con \textbf{números}. Primero hay que convertir el texto \vspace{0.3cm}
+\item Paso 1 --- \textbf{tokenización}: partir el texto en piezas (\textit{tokens}), normalmente sub-palabras \vspace{0.3cm}
+\item Paso 2 --- \textbf{embedding}: asignar a cada token un \textbf{vector} de números \vspace{0.3cm}
+\item Esos vectores son la ``entrada'' de la red
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Tokens y embeddings}
+
+\begin{figure}
+\includegraphics[width=0.95\textwidth]{fig_tokens.pdf}
+\end{figure}
+\vspace{0.1cm}
+\footnotesize Los tokens no siempre son palabras completas; pueden ser fragmentos (``sub'', ``ió'').
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Embeddings: significados como vectores}
+
+\begin{itemize}
+\item Ya los vimos en S5: palabras con significados parecidos quedan \textbf{cerca} en el espacio vectorial \vspace{0.3cm}
+\item Capturan relaciones: el famoso \textit{rey $-$ hombre $+$ mujer $\approx$ reina} \vspace{0.3cm}
+\item En un LLM estos vectores \textbf{no} se fijan a mano: se \textbf{aprenden} durante el entrenamiento \vspace{0.3cm}
+\item Son el ``vocabulario interno'' con el que el modelo piensa
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%   PARTE 3   %%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+\begin{center}
+{\Huge \textbf{Parte 3}}\\[0.5cm]
+{\large De las RNN a los Transformers}
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Recordemos las RNN (S6)}
+
+\begin{itemize}
+\item Las redes recurrentes procesan el texto \textbf{palabra por palabra}, arrastrando una ``memoria'' \vspace{0.3cm}
+\item Problema: con secuencias largas \textbf{olvidan} lo lejano (el gradiente que se desvanece) \vspace{0.3cm}
+\item Y son \textbf{lentas}: al ir en orden, no se pueden paralelizar bien \vspace{0.3cm}
+\item Necesitábamos otra forma de mirar la secuencia
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{La idea de atención}
+
+\begin{itemize}
+\item En vez de leer en orden y olvidar, \textbf{mirar todas las palabras a la vez} y decidir a cuáles ``prestar atención'' \vspace{0.2cm}
+\item Para entender una palabra, el modelo \textbf{pondera} las demás según cuán relevantes son
+\end{itemize}
+
+\begin{figure}
+\includegraphics[width=0.8\textwidth]{fig_attention.pdf}
+\end{figure}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Self-attention: la intuición}
+
+\begin{itemize}
+\item Cada palabra se ``actualiza'' mirando a las otras de la frase \vspace{0.3cm}
+\item Ejemplo: en \textit{``el banco de la plaza''} vs. \textit{``el banco me dio el crédito''}, la palabra \textbf{banco} significa cosas distintas \vspace{0.3cm}
+\item La atención deja que el \textbf{contexto} (plaza vs. crédito) defina el significado \vspace{0.3cm}
+\item Así el modelo resuelve ambigüedad y relaciones a larga distancia
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{La atención, en una ecuación}
+
+Cada palabra emite una \textbf{consulta} ($Q$), y cada palabra ofrece una \textbf{clave} ($K$) y un \textbf{valor} ($V$):
+\[
+\mathrm{Attention}(Q,K,V)=\mathrm{softmax}\!\left(\frac{QK^{\top}}{\sqrt{d_k}}\right)V
+\]
+\begin{itemize}
+\footnotesize
+\item $QK^{\top}$: qué tan compatible es cada palabra con cada otra (similitud) \vspace{0.1cm}
+\item \textit{softmax}: convierte esas compatibilidades en \textbf{pesos} que suman 1 \vspace{0.1cm}
+\item El resultado es un promedio \textbf{ponderado} de los valores: cada palabra ``recoge'' información de las relevantes
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{El Transformer}
+
+\begin{itemize}
+\item Un \textbf{Transformer} apila muchas capas de atención (más redes neuronales entre ellas) \vspace{0.3cm}
+\item Procesa toda la secuencia \textbf{en paralelo} --- por eso escala tan bien con datos y cómputo \vspace{0.3cm}
+\item Es la arquitectura detrás de \textbf{todos} los LLMs actuales \vspace{0.3cm}
+\item[] \footnotesize El artículo que lo introdujo (2017) se titula, con razón, \textit{``Attention is all you need''}.
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%   PARTE 4   %%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+\begin{center}
+{\Huge \textbf{Parte 4}}\\[0.5cm]
+{\large ¿Cómo se entrena un LLM?}
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Pre-entrenamiento auto-supervisado}
+
+\begin{itemize}
+\item Tomamos texto y le tapamos la siguiente palabra; el modelo intenta adivinarla \vspace{0.3cm}
+\item No necesita etiquetas humanas: \textbf{el texto es su propia respuesta} (por eso ``auto-supervisado'') \vspace{0.3cm}
+\item Repetido billones de veces, el modelo aprende gramática, hechos y estilo \vspace{0.3cm}
+\item[] \footnotesize Recordemos S1: clasificar. Aquí la ``clase'' es \textit{cuál de todas las palabras del vocabulario sigue}.
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Predecir = asignar probabilidades}
+
+\begin{figure}
+\includegraphics[width=0.75\textwidth]{fig_nexttoken.pdf}
+\end{figure}
+\vspace{-0.2cm}
+El modelo produce una probabilidad para \textbf{cada} palabra posible:
+\[
+P(w_t \mid w_1,\ldots,w_{t-1})=\frac{e^{z_{w_t}}}{\sum_{v} e^{z_v}}\quad(\textit{softmax})
+\]
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{La función de pérdida}
+
+\begin{itemize}
+\item Entrenar = ajustar los parámetros para que la palabra \textbf{correcta} reciba alta probabilidad \vspace{0.2cm}
+\item Se minimiza la \textbf{entropía cruzada} (penaliza la ``sorpresa''):
+\[
+\mathcal{L}=-\sum_{t}\log P(w_t \mid w_{<t})
+\]
+\item Es la misma lógica de la \textbf{máxima verosimilitud} del logit (S3), a gran escala \vspace{0.2cm}
+\item Se optimiza con \textbf{descenso de gradiente} (S6)
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{El papel de la escala}
+
+\begin{itemize}
+\item Más \textbf{parámetros} + más \textbf{datos} + más \textbf{cómputo} $\Rightarrow$ mejor desempeño, de forma sorprendentemente regular (\textit{scaling laws})
+\end{itemize}
+
+\begin{figure}
+\includegraphics[width=0.62\textwidth]{fig_scaling.pdf}
+\end{figure}
+\vspace{-0.1cm}
+\footnotesize A cierta escala aparecen \textbf{capacidades emergentes} (traducir, resumir, razonar) que no se programaron.
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%   PARTE 5   %%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+\begin{center}
+{\Huge \textbf{Parte 5}}\\[0.5cm]
+{\large De modelo base a asistente}
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Un modelo ``crudo'' no es un chatbot}
+
+\begin{itemize}
+\item Tras el pre-entrenamiento, el modelo solo sabe \textbf{continuar texto} \vspace{0.3cm}
+\item Si le escribes una pregunta, podría responder\ldots o seguir con más preguntas (porque eso también es ``texto plausible'') \vspace{0.3cm}
+\item Para que sea un \textbf{asistente útil} hay que \textbf{alinearlo} con lo que queremos \vspace{0.3cm}
+\item Eso se hace en dos fases adicionales
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Afinar y alinear}
+
+\begin{figure}
+\includegraphics[width=0.95\textwidth]{fig_pipeline.pdf}
+\end{figure}
+\vspace{0.2cm}
+\begin{itemize}
+\footnotesize
+\item \textbf{Instruction tuning}: se afina con ejemplos de \textit{instrucción $\to$ buena respuesta} \vspace{0.1cm}
+\item \textbf{RLHF}: humanos comparan respuestas; el modelo aprende a preferir las que la gente valora (útil, honesto, inofensivo)
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%   PARTE 6   %%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+\begin{center}
+{\Huge \textbf{Parte 6}}\\[0.5cm]
+{\large Cómo se usa (sin reentrenar)}
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Prompting e \textit{in-context learning}}
+
+\begin{itemize}
+\item No hace falta reentrenar para cada tarea: basta con \textbf{pedírselo bien} (el \textit{prompt}) \vspace{0.3cm}
+\item El modelo puede aprender del \textbf{ejemplo dentro del propio prompt} (\textit{in-context learning}) \vspace{0.3cm}
+\item \textbf{Few-shot}: darle unos ejemplos resueltos antes de la tarea real \vspace{0.3cm}
+\item \textbf{Chain-of-thought}: pedirle que ``piense paso a paso'' mejora el razonamiento
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Conectarlo a tus datos: embeddings y RAG}
+
+\begin{itemize}
+\item Un LLM no conoce \textit{tus} documentos ni lo más reciente \vspace{0.25cm}
+\item \textbf{RAG} (\textit{retrieval-augmented generation}): primero \textbf{recuperar} los textos relevantes, luego dejar que el modelo responda con ellos \vspace{0.25cm}
+\item La recuperación usa \textbf{embeddings} (S5): buscar por \textbf{significado}, no por palabra exacta \vspace{0.25cm}
+\item Reduce alucinaciones y permite citar fuentes
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Agentes y herramientas}
+
+\begin{itemize}
+\item Un LLM puede decidir \textbf{usar herramientas}: buscar en la web, ejecutar código, consultar una base de datos \vspace{0.3cm}
+\item Encadenando pasos, se vuelve un \textbf{agente} que resuelve tareas de varios pasos \vspace{0.3cm}
+\item Así supera dos límites: el conocimiento desactualizado y el cálculo exacto
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%   PARTE 7   %%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+\begin{center}
+{\Huge \textbf{Parte 7}}\\[0.5cm]
+{\large Límites, riesgos y política pública}
+\end{center}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Límites y riesgos}
+
+\begin{itemize}
+\item \textbf{Alucinaciones}: inventan información con total seguridad \vspace{0.2cm}
+\item \textbf{Sesgos}: reflejan los de sus datos de entrenamiento \vspace{0.2cm}
+\item \textbf{Desactualización}: solo ``saben'' hasta su fecha de corte \vspace{0.2cm}
+\item \textbf{Costo y ambiente}: entrenar y operar es caro y consume energía \vspace{0.2cm}
+\item \textbf{Privacidad y propiedad}: datos sensibles y derechos de autor
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{¿Por qué alucinan?}
+
+\begin{itemize}
+\item Un LLM optimiza para generar texto \textbf{plausible}, no para consultar una base de hechos \vspace{0.3cm}
+\item Si no ``sabe'', igual produce algo que \textit{suena} bien \vspace{0.3cm}
+\item Por eso: \textbf{verificación humana} y, cuando importa, \textbf{RAG} con fuentes \vspace{0.3cm}
+\item[] \footnotesize Regla de oro: úsalo como un asistente brillante pero falible, no como un oráculo.
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{LLMs en política pública y economía}
+
+\begin{itemize}
+\item \textbf{Análisis de texto a escala}: leyes, sentencias, noticias, redes sociales \vspace{0.2cm}
+\item \textbf{Codificar datos cualitativos}: clasificar miles de PQRS o respuestas abiertas de encuestas (recuerda S1) \vspace{0.2cm}
+\item \textbf{Atención al ciudadano}: asistentes para trámites e información \vspace{0.2cm}
+\item \textbf{Apoyo a la investigación}: resumir literatura, primeras versiones de código
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Cautelas en lo público}
+
+\begin{itemize}
+\item Las decisiones públicas exigen \textbf{transparencia} y \textbf{rendición de cuentas} --- difícil con modelos opacos \vspace{0.25cm}
+\item \textbf{Verificación humana} obligatoria en decisiones que afectan derechos \vspace{0.25cm}
+\item Vigilar \textbf{sesgos y equidad} (como discutimos en S4) \vspace{0.25cm}
+\item Cuidado con \textbf{datos personales} y confidenciales
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Resumen de la sesión}
+
+\begin{itemize}
+\item Un LLM \textbf{predice la siguiente palabra}, a una escala que produce capacidades asombrosas \vspace{0.2cm}
+\item Detrás hay \textbf{Transformers} y \textbf{atención}; antes, \textbf{tokens} y \textbf{embeddings} \vspace{0.2cm}
+\item Se \textbf{pre-entrena} prediciendo texto y se \textbf{alinea} para ser útil \vspace{0.2cm}
+\item Es poderoso pero \textbf{falible}: alucina, sesga, hay que verificarlo \vspace{0.3cm}
+\item Y sobre todo: es el \textbf{mismo} \textit{machine learning} del curso --- representación, predicción, optimización y evaluación --- a gran escala
+\end{itemize}
+}
+
+\end{document}
