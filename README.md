@@ -1,4 +1,4 @@
-# Aprendizaje de Máquinas y Análisis de Datos
+# Aprendizaje de Máquinas y Políticas Públicas
 
 **Bogotá Summer School in Economics — 2026 · Pontificia Universidad Javeriana**
 Profesor: **Jorge Gallego** · Banco Interamericano de Desarrollo · `jagallegod@gmail.com`
