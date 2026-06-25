@@ -1,0 +1,234 @@
+---
+title: "Taller comprimido: cinco modelos de predicción numérica (vivienda)"
+output:
+ html_notebook: default
+---
+
+# 1. Introducción
+
+\
+
+- En la sesión 3 (y el panorama de "otras técnicas") vimos varias formas de **predecir un número**: regresión lineal, Ridge, Lasso, árboles de regresión y ensambles.
+
+- Aquí las implementamos **todas sobre la misma base**, una de **política pública**: el **California Housing**. La tarea es predecir el **valor medio de la vivienda** de un vecindario a partir de características socioeconómicas (ingreso medio, antigüedad, población, ubicación...).
+
+- Es un problema de **vivienda y desigualdad urbana**: dónde y por qué la vivienda es más cara, y qué tanto lo explica el ingreso del vecindario.
+
+- Como el objetivo es **numérico**, ya no medimos "precisión": comparamos los modelos con el **RMSE** (raíz del error cuadrático medio; menor es mejor).
+
+\
+
+# 2. Datos
+
+\
+
+```{r, eval=FALSE}
+install.packages(c("glmnet", "rpart", "rpart.plot", "randomForest"))
+```
+
+\
+
+- Datos públicos (censo de California). Así se obtienen (ya vienen en `data/`):
+
+\
+
+```{r, eval=FALSE}
+url <- "https://raw.githubusercontent.com/ageron/handson-ml2/master/datasets/housing/housing.csv"
+download.file(url, "data/california_housing.csv")
+```
+
+\
+
+- Cargamos, quitamos las pocas filas con datos faltantes y la categoría "ISLAND" (solo 5 casos), y tomamos una muestra de 5000 para que corra rápido:
+
+\
+
+```{r}
+casas <- read.csv("data/california_housing.csv", stringsAsFactors = TRUE)
+casas <- casas[complete.cases(casas), ]                 # quita 207 filas sin total_bedrooms
+casas <- casas[casas$ocean_proximity != "ISLAND", ]     # categoria rarisima (5 casos)
+casas$ocean_proximity <- droplevels(casas$ocean_proximity)
+set.seed(123)
+casas <- casas[sample(nrow(casas), 5000), ]
+summary(casas$median_house_value)
+```
+
+\
+
+- El objetivo (`median_house_value`) está en dólares. Definimos una función para el **RMSE**, que usaremos con todos los modelos:
+
+\
+
+```{r}
+rmse <- function(real, pred) sqrt(mean((real - pred)^2))
+```
+
+\
+
+# 3. Partición entrenamiento / prueba
+
+\
+
+```{r}
+set.seed(123)
+idx <- sample(nrow(casas), 0.75 * nrow(casas))
+entrena <- casas[idx, ]
+prueba  <- casas[-idx, ]
+verdad  <- prueba$median_house_value   # valores reales de la prueba
+```
+
+\
+
+# 4. Regresión lineal (OLS)
+
+\
+
+- El punto de partida: una regresión lineal con todos los predictores.
+
+\
+
+```{r}
+ols <- lm(median_house_value ~ ., data = entrena)
+pred_ols <- predict(ols, prueba)
+rmse(verdad, pred_ols)
+```
+
+\
+
+# 5. Preparación para Ridge y Lasso
+
+\
+
+- `glmnet` (Ridge y Lasso) no recibe una fórmula: necesita una **matriz numérica** de predictores. La construimos con `model.matrix()` (convierte `ocean_proximity` en indicadoras). No hace falta normalizar: `glmnet` estandariza internamente.
+
+\
+
+```{r}
+X <- model.matrix(median_house_value ~ . - 1, data = casas)
+y <- casas$median_house_value
+```
+
+\
+
+# 6. Ridge
+
+\
+
+- Ridge penaliza el tamaño de los coeficientes (los **encoge** hacia cero sin anularlos). `cv.glmnet` elige el nivel de penalización por validación cruzada:
+
+\
+
+```{r}
+library(glmnet)
+set.seed(123)
+cv_ridge   <- cv.glmnet(X[idx, ], y[idx], alpha = 0)   # alpha = 0  ->  Ridge
+pred_ridge <- predict(cv_ridge, X[-idx, ], s = "lambda.min")
+rmse(verdad, pred_ridge)
+```
+
+\
+
+# 7. Lasso
+
+\
+
+- Lasso también penaliza, pero puede llevar coeficientes **exactamente a cero**: hace **selección de variables**.
+
+\
+
+```{r}
+set.seed(123)
+cv_lasso   <- cv.glmnet(X[idx, ], y[idx], alpha = 1)   # alpha = 1  ->  Lasso
+pred_lasso <- predict(cv_lasso, X[-idx, ], s = "lambda.min")
+rmse(verdad, pred_lasso)
+```
+
+\
+
+- Veamos cuáles coeficientes quedaron (los que aparecen como `.` fueron anulados):
+
+\
+
+```{r}
+coef(cv_lasso, s = "lambda.min")
+```
+
+\
+
+# 8. Árbol de regresión
+
+\
+
+- Un árbol de regresión parte los datos en grupos y predice, en cada hoja, el **promedio** del valor de vivienda. Se puede visualizar:
+
+\
+
+```{r}
+library(rpart)
+library(rpart.plot)
+arbol <- rpart(median_house_value ~ ., data = entrena)
+pred_arbol <- predict(arbol, prueba)
+rmse(verdad, pred_arbol)
+```
+
+\
+
+```{r, fig.width=10, fig.height=6}
+rpart.plot(arbol)
+```
+
+\
+
+# 9. Random Forest
+
+\
+
+- Un bosque promedia cientos de árboles y suele dar el menor error. Y nos dice qué variables pesan más:
+
+\
+
+```{r}
+library(randomForest)
+set.seed(123)
+bosque <- randomForest(median_house_value ~ ., data = entrena)
+pred_rf <- predict(bosque, prueba)
+rmse(verdad, pred_rf)
+```
+
+\
+
+```{r, fig.width=7, fig.height=5}
+varImpPlot(bosque, main = "Importancia de variables (Random Forest)")
+```
+
+\
+
+# 10. Comparación
+
+\
+
+```{r}
+rmse_todos <- c(
+  OLS          = rmse(verdad, pred_ols),
+  Ridge        = rmse(verdad, pred_ridge),
+  Lasso        = rmse(verdad, pred_lasso),
+  Arbol        = rmse(verdad, pred_arbol),
+  RandomForest = rmse(verdad, pred_rf)
+)
+round(sort(rmse_todos), 0)   # menor es mejor
+```
+
+\
+
+```{r}
+barplot(sort(rmse_todos, decreasing = TRUE), horiz = TRUE, las = 1,
+        col = "steelblue", xlab = "RMSE en dólares (menor es mejor)",
+        main = "Comparación de modelos de predicción numérica")
+```
+
+\
+
+- Lecciones:
+  1. **Random Forest** suele dar el menor RMSE, pero es una "caja negra"; **OLS** es peor predictor pero **interpretable** (puedes leer el efecto de cada variable). Es el *trade-off* de siempre.
+  2. **Ridge y Lasso** se parecen mucho a OLS aquí, porque hay **pocos predictores**. Su ventaja brilla cuando hay **muchas** variables (decenas o cientos), donde controlan el sobreajuste y, en el caso de Lasso, **seleccionan** las relevantes.
+  3. El predictor dominante es el **ingreso medio** del vecindario: una lectura directa de **desigualdad** en el acceso a la vivienda.

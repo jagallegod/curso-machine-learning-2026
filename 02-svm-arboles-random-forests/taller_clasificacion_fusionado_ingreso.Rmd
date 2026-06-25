@@ -1,0 +1,222 @@
+---
+title: "Taller comprimido: clasificación en política pública (ingreso y desigualdad)"
+output:
+ html_notebook: default
+---
+
+# 1. Introducción
+
+\
+
+- Mismo ejercicio de clasificación, pero con una base claramente de **política pública**: el **Census Income** (microdatos del censo de EE.UU.).
+
+- La tarea: predecir si una persona tiene un **ingreso alto** (más de 50.000 USD al año) a partir de características demográficas: edad, educación, ocupación, estado civil, horas trabajadas, etc.
+
+- Es el dataset de referencia para estudiar **desigualdad**, **focalización de programas sociales** y, sobre todo, **equidad/sesgo algorítmico**: como incluye **raza** y **sexo**, es el caso clásico para discutir discriminación en modelos de decisión pública.
+
+- Implementamos los cinco modelos sobre la misma base: kNN, Naive Bayes, SVM, árbol de decisión (C5.0) y Random Forest.
+
+\
+
+# 2. Datos
+
+\
+
+```{r, eval=FALSE}
+install.packages(c("class", "e1071", "C50", "randomForest"))
+```
+
+\
+
+- Los datos son públicos (UCI Machine Learning Repository). Así se obtienen (ya vienen incluidos en `data/census_income.csv`):
+
+\
+
+```{r, eval=FALSE}
+url  <- "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data"
+cols <- c("age","workclass","fnlwgt","education","education_num","marital_status",
+          "occupation","relationship","race","sex","capital_gain","capital_loss",
+          "hours_per_week","native_country","income")
+censo <- read.csv(url, header = FALSE, col.names = cols, strip.white = TRUE,
+                  stringsAsFactors = TRUE, na.strings = "?")
+write.csv(censo, "data/census_income.csv", row.names = FALSE)
+```
+
+\
+
+- Cargamos el archivo, quitamos columnas poco útiles, eliminamos las filas con datos faltantes ("?") y tomamos una muestra de 5000 (para que corra rápido en clase):
+
+\
+
+```{r}
+censo <- read.csv("data/census_income.csv", strip.white = TRUE,
+                  stringsAsFactors = TRUE, na.strings = "?")
+censo$fnlwgt        <- NULL   # peso muestral del censo, no es un predictor
+censo$education     <- NULL   # redundante con education_num
+censo$native_country <- NULL  # 41 categorias, casi todo EE.UU.
+censo <- censo[complete.cases(censo), ]   # quitar filas con "?"
+set.seed(123)
+censo <- censo[sample(nrow(censo), 5000), ]
+censo$income <- factor(censo$income)      # objetivo: <=50K vs >50K
+table(censo$income)
+```
+
+\
+
+- Quedan 11 predictores (numéricos como edad y horas trabajadas; categóricos como ocupación y estado civil). Las clases están **desbalanceadas** (la mayoría gana <=50K): clave para la evaluación.
+
+\
+
+# 3. Partición entrenamiento / prueba
+
+\
+
+```{r}
+set.seed(123)
+idx <- sample(nrow(censo), 0.75 * nrow(censo))
+entrena <- censo[idx, ]
+prueba  <- censo[-idx, ]
+verdad  <- prueba$income
+```
+
+\
+
+# 4. k vecinos más cercanos (kNN)
+
+\
+
+- kNN se basa en **distancias**, así que necesita predictores **numéricos**. Convertimos las categóricas en variables **indicadoras** (0/1) con `model.matrix()` y normalizamos. (Los modelos de árboles no lo necesitan.)
+
+\
+
+```{r}
+normalizar <- function(x) {
+  rango <- max(x) - min(x)
+  if (rango == 0) return(rep(0, length(x)))   # evita dividir por cero
+  (x - min(x)) / rango
+}
+X <- model.matrix(income ~ . - 1, data = censo)   # categoricas -> indicadoras
+X <- as.data.frame(lapply(as.data.frame(X), normalizar))
+```
+
+\
+
+```{r}
+library(class)
+knn_pred <- knn(train = X[idx, ], test = X[-idx, ],
+                cl = censo$income[idx], k = 63)    # k cercano a la raiz del n
+mean(knn_pred == verdad)                       # precision
+table(Real = verdad, Prediccion = knn_pred)    # matriz de confusion
+```
+
+\
+
+- La **matriz de confusión** cruza la clase real con la predicha: la diagonal son los aciertos; fuera de ella, los errores.
+
+\
+
+# 5. Naive Bayes
+
+\
+
+```{r}
+library(e1071)
+nb_modelo <- naiveBayes(income ~ ., data = entrena)
+nb_pred   <- predict(nb_modelo, prueba)
+mean(nb_pred == verdad)
+table(Real = verdad, Prediccion = nb_pred)
+```
+
+\
+
+# 6. Support Vector Machine (SVM)
+
+\
+
+```{r}
+svm_modelo <- svm(income ~ ., data = entrena, kernel = "radial")
+svm_pred   <- predict(svm_modelo, prueba)
+mean(svm_pred == verdad)
+table(Real = verdad, Prediccion = svm_pred)
+```
+
+\
+
+# 7. Árbol de decisión (C5.0)
+
+\
+
+```{r}
+library(C50)
+c5_modelo <- C5.0(income ~ ., data = entrena)
+c5_pred   <- predict(c5_modelo, prueba)
+mean(c5_pred == verdad)
+table(Real = verdad, Prediccion = c5_pred)
+```
+
+\
+
+- El árbol se puede **visualizar**. Cada nodo es una pregunta sobre un predictor (educación, estado civil, edad...):
+
+\
+
+```{r, fig.width=12, fig.height=7}
+plot(c5_modelo)
+```
+
+\
+
+# 8. Random Forest
+
+\
+
+```{r}
+library(randomForest)
+set.seed(123)
+rf_modelo <- randomForest(income ~ ., data = entrena)
+rf_pred   <- predict(rf_modelo, prueba)
+mean(rf_pred == verdad)
+table(Real = verdad, Prediccion = rf_pred)
+```
+
+\
+
+- ¿Qué variables pesan más para predecir el ingreso alto?
+
+\
+
+```{r, fig.width=7, fig.height=5}
+varImpPlot(rf_modelo, n.var = 10,
+           main = "Importancia de variables (Random Forest)")
+```
+
+\
+
+# 9. Comparación
+
+\
+
+```{r}
+precision <- c(
+  kNN          = mean(knn_pred == verdad),
+  NaiveBayes   = mean(nb_pred  == verdad),
+  SVM          = mean(svm_pred == verdad),
+  C5.0         = mean(c5_pred  == verdad),
+  RandomForest = mean(rf_pred  == verdad)
+)
+round(sort(precision, decreasing = TRUE), 4)
+```
+
+\
+
+```{r}
+barplot(sort(precision), horiz = TRUE, las = 1, xlim = c(0, 1),
+        col = "seagreen", xlab = "Precisión",
+        main = "Comparación de modelos (ingreso)")
+```
+
+\
+
+- Dos lecciones de política pública:
+  1. **El desbalance engaña**: como la mayoría gana <=50K, un modelo que prediga "todos <=50K" ya acierta ~76%. La precisión total no basta: hay que mirar la **matriz de confusión** y métricas como sensibilidad y kappa (**sesión 4**).
+  2. **Equidad**: el modelo usa `race` y `sex` como predictores. ¿Es legítimo que una decisión pública dependa de ellos? Aquí es donde el *machine learning* se cruza con la **discriminación** y la **justicia algorítmica** --- una discusión imprescindible al llevar estos modelos a la política.

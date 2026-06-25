@@ -1,0 +1,228 @@
+---
+title: "Taller sintético: evaluar un modelo (desempeño)"
+output:
+ html_notebook: default
+---
+
+# 1. Introducción
+
+\
+
+- Este taller **no entrena modelos nuevos**: toma uno y se concentra en **evaluarlo bien** --- el corazón de la sesión 4.
+
+- Usamos el **Census Income** (microdatos del censo): predecir si una persona tiene **ingreso alto** (>50K). Es un problema de **política pública** (desigualdad, focalización) y, lo importante para evaluar, está **desbalanceado**: la mayoría gana <=50K.
+
+- Recorremos lo esencial: **matriz de confusión**, la trampa de la *accuracy*, **precision/recall/F1**, **curva ROC y AUC**, y **validación cruzada**.
+
+\
+
+# 2. Datos y un modelo simple
+
+\
+
+```{r, eval=FALSE}
+install.packages("pROC")
+```
+
+\
+
+- Cargamos, limpiamos y tomamos una muestra de 5000 (igual que en el taller de clasificación):
+
+\
+
+```{r}
+censo <- read.csv("data/census_income.csv", strip.white = TRUE,
+                  stringsAsFactors = TRUE, na.strings = "?")
+censo$fnlwgt <- NULL; censo$education <- NULL; censo$native_country <- NULL
+censo$relationship <- NULL   # casi redundante con marital_status + sex (evita colinealidad)
+censo <- censo[complete.cases(censo), ]
+set.seed(123)
+censo <- censo[sample(nrow(censo), 5000), ]
+censo$income <- factor(censo$income)   # niveles: <=50K (negativo), >50K (positivo)
+
+# Quitamos las categorías muy raras (con menos de 40 casos): evita que un nivel
+# quede solo en una partición y rompa la predicción de la regresión
+for (v in names(censo)) {
+  col <- censo[[v]]
+  if (is.factor(col)) censo <- censo[col %in% names(which(table(col) >= 40)), ]
+}
+censo <- droplevels(censo)
+table(censo$income)
+```
+
+\
+
+- Partimos en entrenamiento/prueba y entrenamos una **regresión logística** (nos da una **probabilidad** de >50K, ideal para evaluar):
+
+\
+
+```{r, warning=FALSE}
+set.seed(123)
+idx <- sample(nrow(censo), 0.75 * nrow(censo))
+entrena <- censo[idx, ]
+prueba  <- censo[-idx, ]
+verdad  <- prueba$income
+
+modelo <- glm(income ~ ., data = entrena, family = "binomial")
+prob   <- predict(modelo, prueba, type = "response")   # P(ingreso > 50K)
+```
+
+\
+
+# 3. Matriz de confusión
+
+\
+
+- Con un umbral de 0.5 convertimos la probabilidad en clase y la cruzamos con la realidad:
+
+\
+
+```{r}
+pred  <- factor(ifelse(prob > 0.5, ">50K", "<=50K"), levels = c("<=50K", ">50K"))
+tabla <- table(Real = verdad, Prediccion = pred)
+tabla
+```
+
+\
+
+# 4. La trampa de la *accuracy*
+
+\
+
+```{r}
+accuracy <- mean(pred == verdad)
+baseline <- mean(verdad == "<=50K")   # un modelo trivial: "nadie gana >50K"
+round(c(accuracy = accuracy, baseline_trivial = baseline), 3)
+```
+
+\
+
+- La *accuracy* parece alta... pero el modelo trivial que dice "todos <=50K" ya acierta `baseline_trivial`. **Con desbalance, la accuracy sola engaña.**
+
+\
+
+# 5. Precision, recall y F1
+
+\
+
+- Nos enfocamos en la clase de interés (>50K). Las calculamos directo de la matriz de confusión:
+
+\
+
+```{r}
+TP <- tabla[">50K", ">50K"]; FP <- tabla["<=50K", ">50K"]
+FN <- tabla[">50K", "<=50K"]
+precision <- TP / (TP + FP)   # de lo que marco >50K, cuanto acierto
+recall    <- TP / (TP + FN)   # de los >50K reales, cuantos detecto
+F1        <- 2 * precision * recall / (precision + recall)
+round(c(precision = precision, recall = recall, F1 = F1), 3)
+```
+
+\
+
+- Nota el contraste: la *accuracy* es alta, pero el **recall** (detectar a los de ingreso alto) suele ser bastante más bajo. Esa es la historia que la accuracy esconde.
+
+\
+
+# 6. Curva ROC y AUC
+
+\
+
+- Como tenemos una **probabilidad**, podemos recorrer **todos los umbrales**. La curva ROC y el **AUC** resumen el desempeño sin fijar un umbral:
+
+\
+
+```{r, message=FALSE, warning=FALSE}
+library(pROC)
+roc_obj <- roc(verdad, prob, levels = c("<=50K", ">50K"), direction = "<", quiet = TRUE)
+auc(roc_obj)
+```
+
+\
+
+```{r, fig.width=5.5, fig.height=5}
+plot(roc_obj, legacy.axes = TRUE, print.auc = TRUE,
+     xlab = "Tasa de falsos positivos",
+     ylab = "Tasa de verdaderos positivos (recall)")
+```
+
+\
+
+# 7. Validación cruzada
+
+\
+
+- La accuracy de **una sola** partición puede ser suerte. La **validación cruzada** (10 particiones) estima el desempeño **futuro** de forma más confiable. La hacemos a mano para ver la idea:
+
+\
+
+```{r, warning=FALSE}
+set.seed(123)
+k <- 10
+fold <- sample(rep(1:k, length.out = nrow(censo)))
+acc_cv <- sapply(1:k, function(i) {
+  m  <- glm(income ~ ., data = censo[fold != i, ], family = "binomial")
+  p  <- predict(m, censo[fold == i, ], type = "response")
+  cl <- ifelse(p > 0.5, ">50K", "<=50K")
+  mean(cl == censo$income[fold == i])
+})
+round(c(media = mean(acc_cv), desv = sd(acc_cv)), 3)
+```
+
+\
+
+# 8. Rebalanceo: subir el recall
+
+\
+
+- El recall bajo viene del **desbalance**: el modelo ve muy pocos casos >50K. Una solución vista en clase: **rebalancear el entrenamiento** (aquí, sobre-muestreando la clase rara con `ROSE`). Importante: se balancea **solo el entrenamiento**, nunca la prueba.
+
+\
+
+```{r, message=FALSE, warning=FALSE}
+library(ROSE)
+set.seed(123)
+entrena_bal <- ovun.sample(income ~ ., data = entrena, method = "over")$data
+table(entrena_bal$income)   # las clases quedan ~balanceadas
+```
+
+\
+
+- Reentrenamos con los datos balanceados y evaluamos sobre la **misma** prueba:
+
+\
+
+```{r, warning=FALSE}
+modelo_bal <- glm(income ~ ., data = entrena_bal, family = "binomial")
+prob_bal   <- predict(modelo_bal, prueba, type = "response")
+pred_bal   <- factor(ifelse(prob_bal > 0.5, ">50K", "<=50K"), levels = c("<=50K", ">50K"))
+table(Real = verdad, Prediccion = pred_bal)
+```
+
+\
+
+- Comparamos recall y precision, antes y después de balancear:
+
+\
+
+```{r}
+TP_b <- sum(pred_bal == ">50K" & verdad == ">50K")
+recall_bal    <- TP_b / sum(verdad == ">50K")
+precision_bal <- TP_b / sum(pred_bal == ">50K")
+round(c(recall_antes = recall,       recall_despues = recall_bal,
+        precision_antes = precision, precision_despues = precision_bal), 3)
+```
+
+\
+
+- El **recall sube** (detectamos muchos más >50K), a costa de **menos precision** (más falsas alarmas): el *trade-off* esperado. Cuál preferir depende de qué error sea más costoso en la política concreta.
+
+\
+
+# 9. Cierre
+
+\
+
+- Con datos de **política pública** (desbalanceados), la *accuracy* sola **no basta**.
+- Mira el **recall** (¿a cuántos del grupo de interés detecto?), el **F1** y el **AUC**.
+- Para subir el **recall** del grupo de interés tienes dos palancas: **rebalancear** el entrenamiento (lo que hicimos) o **mover el umbral** (0.5 por defecto). Ambas cambian el intercambio recall/precision --- el mismo que dibuja la **curva ROC**.
