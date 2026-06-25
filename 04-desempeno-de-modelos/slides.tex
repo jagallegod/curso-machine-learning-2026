@@ -182,18 +182,22 @@ Buscamos maximizar la precisión y minimizar el error... pero ya vimos que eso no
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \frame{
-  \frametitle{Estadístico Kappa}
+  \frametitle{Mejores métricas: precision, recall y F1}
 
 \begin{itemize}
-\item Ajusta la precisión por los aciertos que ocurrirían \textbf{por puro azar}
+\item La precisión total no distingue \textbf{tipos de error}. Sobre la clase de interés (los ``positivos''), tres métricas más informativas:
 \[
-\kappa = \frac{Pr(a) - Pr(e)}{1 - Pr(e)}
+precision = \frac{TP}{TP+FP}, \qquad recall = \frac{TP}{TP+FN}
 \]
-donde $Pr(a)$ es la concordancia observada y $Pr(e)$ la esperada por azar. \vspace{0.3cm}
+\[
+F_1 = 2\cdot\frac{precision \cdot recall}{precision + recall}
+\]
 
-\item Útil con \textbf{desbalance de clase} (donde es fácil tener precisión alta clasificando todo en la clase mayoritaria) \vspace{0.3cm}
+\item \textbf{Precision}: de lo que predigo positivo, ¿cuánto acierto? (penaliza los \textbf{falsos positivos}) \vspace{0.15cm}
 
-\item Va de 0 a 1: $\leq 0.2$ muy baja; 0.2--0.4 baja; 0.4--0.6 moderada; 0.6--0.8 alta; $>0.8$ muy alta
+\item \textbf{Recall}: de los positivos reales, ¿cuántos detecto? (penaliza los \textbf{falsos negativos}) \vspace{0.15cm}
+
+\item \textbf{F1}: combina ambos en un número (su media armónica); muy útil con \textbf{desbalance}
 
 \end{itemize}
 }
@@ -201,61 +205,18 @@ donde $Pr(a)$ es la concordancia observada y $Pr(e)$ la esperada por azar. \vspa
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \frame{
-  \frametitle{Kappa: ejemplo (SMS spam)}
+  \frametitle{La curva ROC, de forma intuitiva}
 
-\begin{columns}
-\begin{column}{0.5\textwidth}
-\includegraphics[width=\textwidth]{confusion_spam.pdf}
-\end{column}
-\begin{column}{0.5\textwidth}
+\begin{itemize}
 \footnotesize
-$Pr(a) = \dfrac{1203+152}{1390} = 0.974$ \vspace{0.3cm}
-
-$Pr(e) = \dfrac{1207}{1390}\cdot\dfrac{1234}{1390} + \dfrac{183}{1390}\cdot\dfrac{156}{1390} = 0.786$ \vspace{0.3cm}
-
-$\kappa = \dfrac{0.974 - 0.786}{1 - 0.786} = 0.879$ \vspace{0.3cm}
-
-\normalsize Concordancia muy alta: los pronósticos van mucho más allá del azar.
-\end{column}
-\end{columns}
-\vspace{0.2cm}
-\tiny Fuente: Lantz (2015)
-}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\frame{
-  \frametitle{Sensibilidad y especificidad}
-
-\begin{itemize}
-\item Capturan un \textit{trade-off}: clasificadores muy agresivos vs. muy conservadores
-\[
-sensibilidad = \frac{TP}{TP+FN}, \qquad especificidad = \frac{TN}{TN+FP}
-\]
-
-\item \textbf{Sensibilidad}: fracción de positivos que detectamos bien \vspace{0.2cm}
-
-\item \textbf{Especificidad}: fracción de negativos que detectamos bien \vspace{0.3cm}
-
-\item Un filtro de spam agresivo (alta sensibilidad) bloquea correos buenos (baja especificidad). El punto ideal depende del problema
-
-\end{itemize}
-}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\frame{
-  \frametitle{Curvas ROC}
-
-\begin{itemize}
-\item El \textit{trade-off} sensibilidad--especificidad se ve gráficamente con la \textbf{curva ROC} \vspace{0.2cm}
-\item Eje $y$: verdaderos positivos. Eje $x$: falsos positivos
+\item Un clasificador no da un ``sí/no'': da un \textbf{puntaje} (una probabilidad). Tú eliges el \textbf{umbral} a partir del cual marcas ``positivo'' \vspace{0.1cm}
+\item Si \textbf{bajas} el umbral, detectas más positivos reales (sube el \textbf{recall}), pero también disparas más \textbf{falsas alarmas} (más falsos positivos) \vspace{0.1cm}
+\item La \textbf{curva ROC} traza ese intercambio para \textbf{todos} los umbrales: \% de verdaderos positivos (eje $y$) vs. \% de falsos positivos (eje $x$)
 \end{itemize}
 
-\begin{figure}
-\includegraphics[scale=0.9]{ROC.pdf}
-\end{figure}
-\tiny Fuente: Lantz (2015)
+\begin{center}
+\includegraphics[width=0.58\textwidth]{roc_intuitiva.pdf}
+\end{center}
 }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -517,33 +478,12 @@ sensibilidad = \frac{TP}{TP+FN}, \qquad especificidad = \frac{TN}{TN+FP}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \frame{
-  \frametitle{Cuando la precisión engaña: mejores métricas}
-
-\begin{itemize}
-\item Con desbalance, en vez de la precisión total miramos: \vspace{0.2cm}
-\[
-precision = \frac{TP}{TP+FP}, \qquad recall = sensibilidad = \frac{TP}{TP+FN}
-\]
-\[
-F_1 = 2\cdot\frac{precision \cdot recall}{precision + recall}
-\]
-
-\item \textbf{Precision}: de lo que predigo positivo, ¿cuánto acierto? \vspace{0.1cm}
-\item \textbf{Recall}: de los positivos reales, ¿cuántos detecto? \vspace{0.1cm}
-\item \textbf{F1} combina ambos (media armónica). También: kappa y AUC
-
-\end{itemize}
-}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\frame{
   \frametitle{ROC vs. curva precision-recall}
 
 \begin{itemize}
 \item Con desbalance fuerte, la curva ROC puede verse ``demasiado optimista'' \vspace{0.3cm}
 
-\item Esto porque la especificidad se mantiene alta cuando los negativos son muchísimos \vspace{0.3cm}
+\item Esto porque, al haber muchísimos negativos, la \textbf{tasa de falsos positivos} se mantiene baja casi sin esfuerzo \vspace{0.3cm}
 
 \item La \textbf{curva precision-recall} se concentra en la clase rara y suele ser más informativa en esos casos \vspace{0.3cm}
 
@@ -635,30 +575,6 @@ con $\lambda \sim U(0,1)$ \vspace{0.2cm}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \frame{
-  \frametitle{Descomposición sesgo-varianza}
-
-\begin{columns}
-\begin{column}{0.5\textwidth}
-\footnotesize
-El error esperado de predicción se descompone en:
-\[
-\underbrace{Sesgo^2}_{\text{modelo muy simple}} + \underbrace{Varianza}_{\text{modelo muy complejo}} + \underbrace{\sigma^2}_{\text{irreducible}}
-\]
-\normalsize
-\begin{itemize}
-\item Más complejidad: menos sesgo, más varianza \vspace{0.1cm}
-\item Hay un punto óptimo que minimiza el error total
-\end{itemize}
-\end{column}
-\begin{column}{0.5\textwidth}
-\includegraphics[width=\textwidth]{bias_variance.pdf}
-\end{column}
-\end{columns}
-}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\frame{
   \frametitle{¿Cómo combatir el sobreajuste?}
 
 \begin{itemize}
@@ -718,7 +634,7 @@ El error esperado de predicción se descompone en:
 
 \item La predicción final es una combinación ponderada de todos \vspace{0.3cm}
 
-\item Ya lo usamos sin nombrarlo: el parámetro \texttt{trials} de C5.0 hace \textit{boosting}
+\item En R se implementa con paquetes como \texttt{gbm}, \texttt{xgboost} o \texttt{adabag}
 
 \end{itemize}
 }
@@ -761,7 +677,7 @@ El error esperado de predicción se descompone en:
   \frametitle{Resumen de la sesión}
 
 \begin{itemize}
-\item La \textbf{precisión total} no basta: con desbalance, mira kappa, sensibilidad/especificidad, F1 y AUC \vspace{0.2cm}
+\item La \textbf{precisión total} no basta: con desbalance, mira \textbf{precision}, \textbf{recall}, \textbf{F1} y AUC \vspace{0.2cm}
 
 \item Estima el desempeño \textbf{futuro} con holdout y \textbf{validación cruzada} (sin contaminar la prueba) \vspace{0.2cm}
 
@@ -769,7 +685,7 @@ El error esperado de predicción se descompone en:
 
 \item Maneja el \textbf{desbalance} (re-muestreo, SMOTE/ROSE, costos) \vspace{0.2cm}
 
-\item Controla el \textbf{sobreajuste} (sesgo-varianza, CV, regularización) con \textbf{ensamblaje} y \textbf{boosting}
+\item Controla el \textbf{sobreajuste} (validación cruzada, regularización) con \textbf{ensamblaje} y \textbf{boosting}
 
 \end{itemize}
 }
