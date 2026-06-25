@@ -504,6 +504,48 @@ RSS + \lambda \sum_{j=1}^p |\beta_j|
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \frame{
+  \frametitle{Árboles de regresión}
+
+\begin{itemize}
+\item Misma idea que los árboles de clasificación (sesión 2), pero ahora el objetivo es un \textbf{número} \vspace{0.25cm}
+\item Parten los datos con reglas ``si\ldots entonces\ldots''; en cada \textbf{hoja} predicen el \textbf{promedio} del \textit{outcome} de los casos que caen ahí \vspace{0.25cm}
+\item En vez de minimizar la impureza (Gini), eligen los cortes que más reducen la \textbf{varianza} (el error cuadrático) dentro de cada hoja \vspace{0.25cm}
+\item \textbf{Ventajas}: capturan no linealidades e interacciones, son interpretables y no requieren escalar las variables \vspace{0.2cm}
+\item \textbf{Límite}: la predicción es ``escalonada'' (constante por región) y un solo árbol sobreajusta con facilidad
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Model trees}
+
+\begin{itemize}
+\item Un refinamiento del árbol de regresión \vspace{0.3cm}
+\item En lugar de predecir un \textbf{promedio} en cada hoja, ajusta una \textbf{regresión lineal} dentro de cada hoja \vspace{0.3cm}
+\item Combina lo mejor de dos mundos: la partición \textbf{no lineal} del árbol y la \textbf{suavidad} de la regresión local \vspace{0.3cm}
+\item Suele predecir mejor que un árbol de regresión simple \vspace{0.3cm}
+\item En R, el algoritmo clásico es \textbf{M5} (lo vemos en el apéndice de \textit{regression trees})
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Random forests para predicción numérica}
+
+\begin{itemize}
+\item Un solo árbol tiene mucha \textbf{varianza} (cambia bastante según la muestra). La solución: promediar \textbf{muchos} árboles \vspace{0.25cm}
+\item Cada árbol se entrena con una muestra \textit{bootstrap} distinta y un subconjunto aleatorio de variables (igual que en clasificación, sesión 2) \vspace{0.25cm}
+\item La predicción final es el \textbf{promedio} de todos los árboles (en clasificación era el \textbf{voto} mayoritario) \vspace{0.25cm}
+\item Reduce el sobreajuste y suele dar el \textbf{menor error} de predicción \vspace{0.25cm}
+\item \textbf{Costo}: pierde interpretabilidad, pero entrega una medida de \textbf{importancia} de cada variable
+\end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
   \frametitle{¿Cuál elegir, y dónde se profundiza?}
 
 \begin{itemize}
