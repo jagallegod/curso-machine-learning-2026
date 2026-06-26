@@ -68,6 +68,7 @@ La nota final se compone de tres pruebas:
   - [Clustering con k-medias — segmentación](https://htmlpreview.github.io/?https://github.com/jagallegod/curso-machine-learning-2026/blob/main/05-no-supervisado/taller_clustering.html) · datos: [`teens.csv`](05-no-supervisado/data/teens.csv)
   - [Detección de anomalías (LOF) — fraude en transacciones](https://htmlpreview.github.io/?https://github.com/jagallegod/curso-machine-learning-2026/blob/main/05-no-supervisado/taller_anomalias.html) · datos: [`anomalias.csv`](05-no-supervisado/data/anomalias.csv)
   - [Representación de datos con PCA](https://htmlpreview.github.io/?https://github.com/jagallegod/curso-machine-learning-2026/blob/main/05-no-supervisado/taller_representacion.html) · datos: [`wisc_bc_data.csv`](05-no-supervisado/data/wisc_bc_data.csv)
+  - [Taller unificado: no supervisado (clustering, anomalías, PCA)](https://htmlpreview.github.io/?https://github.com/jagallegod/curso-machine-learning-2026/blob/main/05-no-supervisado/taller_no_supervisado_unificado.html) · datos: [`wisc_bc_data.csv`](05-no-supervisado/data/wisc_bc_data.csv)
 - 🎧 [Podcast](https://notebooklm.google.com/notebook/58418a34-1f1a-452f-8034-fc15474f714f/artifact/2e78ba25-ef13-477c-8b9d-2f7a315e41b7?utm_source=nlm_web_share&utm_medium=google_oo&utm_campaign=art_share_1&utm_content=&utm_smc=nlm_web_share_google_oo_art_share_1_)
 
 ### 6. Aprendizaje Profundo (Deep Learning)

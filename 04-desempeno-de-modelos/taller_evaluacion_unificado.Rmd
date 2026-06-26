@@ -50,7 +50,7 @@ censo <- droplevels(censo)
 
 ```{r, warning=FALSE}
 set.seed(123)
-idx     <- createDataPartition(censo$income, p = 0.75, list = FALSE)
+idx     <- sample(nrow(censo), 0.75 * nrow(censo))
 entrena <- censo[idx, ]
 prueba  <- censo[-idx, ]
 

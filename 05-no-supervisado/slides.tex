@@ -325,22 +325,6 @@ dist(x,y)=\sqrt{\sum_{i=1}^n (x_i-y_i)^2}
 \end{center}
 }
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\frame{
-  \frametitle{Al taller}
-
-\begin{itemize}
-\item Segmentaremos a \textbf{30.000 adolescentes} de una red social según las palabras de su perfil \vspace{0.3cm}
-
-\item Usaremos $k=5$ (inspirados en \textit{The Breakfast Club}: princesas, atletas, cerebros, etc.) \vspace{0.3cm}
-
-\item Veremos cómo el algoritmo recupera grupos interpretables sin que le digamos nada de antemano \vspace{0.3cm}
-
-\item Base: \texttt{teens.csv}, con la función \texttt{kmeans()}
-
-\end{itemize}
-}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%   PARTE 3: ANOMALÍAS   %%%%%%%%%%%%%%
@@ -400,9 +384,9 @@ dist(x,y)=\sqrt{\sum_{i=1}^n (x_i-y_i)^2}
 \begin{column}{0.5\textwidth}
 \footnotesize
 \begin{itemize}
-\item Univariado: marcar valores con $|z|>3$ (regla de 3 sigma) o fuera del rango intercuartílico (Tukey) \vspace{0.2cm}
-\item Multivariado: la \textbf{distancia de Mahalanobis} mide qué tan ``raro'' es un punto teniendo en cuenta la correlación entre variables \vspace{0.2cm}
-\item Simple y rápido, pero asume una forma (p. ej. normal)
+\item Marcar como atípico lo que cae lejos de lo \textbf{típico} \vspace{0.25cm}
+\item Univariado: valores con $|z|>3$ (regla de 3 sigma) o fuera del rango intercuartílico (Tukey) \vspace{0.25cm}
+\item Simple y rápido, pero mira \textbf{una variable a la vez} y asume una forma (p.\,ej. normal)
 \end{itemize}
 \end{column}
 \begin{column}{0.5\textwidth}
@@ -456,15 +440,19 @@ dist(x,y)=\sqrt{\sum_{i=1}^n (x_i-y_i)^2}
   \frametitle{LOF: ¿cómo se calcula? (intuición)}
 
 \begin{itemize}
-\item[1.] Para cada punto, se miran sus $k$ vecinos más cercanos \vspace{0.3cm}
+\item[1.] Para cada punto se miran sus $k$ vecinos más cercanos \vspace{0.15cm}
 
-\item[2.] Se estima su \textbf{densidad local}: qué tan apiñados están esos vecinos a su alrededor \vspace{0.3cm}
+\item[2.] Su \textbf{densidad local} se aproxima como el inverso de la distancia promedio a esos vecinos:
+\[
+\text{densidad}(p)\;\approx\;\frac{1}{\text{dist. promedio de } p \text{ a sus } k \text{ vecinos}}
+\]
 
-\item[3.] Se compara esa densidad con la densidad \textbf{de} sus vecinos \vspace{0.3cm}
+\item[3.] El \textbf{LOF} compara esa densidad con la de sus vecinos:
+\[
+LOF(p)\;\approx\;\frac{\text{densidad promedio de los vecinos de } p}{\text{densidad de } p}
+\]
 
-\item[4.] El \textbf{LOF} es la razón entre ambas: si la del punto es mucho menor, el cociente es alto \vspace{0.3cm}
-
-\item Por eso un punto solitario al borde de un grupo denso tiene LOF alto, aunque no esté ``tan lejos'' en distancia absoluta
+\item[4.] $LOF\approx 1$: normal; $\;LOF\gg 1$: zona mucho menos densa que la de sus vecinos $\Rightarrow$ anomalía
 
 \end{itemize}
 }
@@ -489,17 +477,38 @@ dist(x,y)=\sqrt{\sum_{i=1}^n (x_i-y_i)^2}
   \frametitle{Isolation Forest}
 
 \begin{itemize}
-\item Un enfoque \textbf{por modelo}, basado en árboles (conecta con random forests) \vspace{0.3cm}
+\item Enfoque \textbf{por modelo}, basado en árboles (conecta con random forests) \vspace{0.25cm}
 
-\item Idea: aislar cada punto haciendo \textbf{cortes aleatorios} en las variables \vspace{0.3cm}
+\item Construye árboles con \textbf{cortes aleatorios}: elige una variable al azar y un punto de corte al azar, y repite \vspace{0.25cm}
 
-\item Un punto \textbf{anómalo}, al estar apartado, se aísla con \textbf{muy pocos} cortes \vspace{0.3cm}
+\item Cada corte parte los datos en dos; se sigue hasta \textbf{aislar} cada punto \vspace{0.25cm}
 
-\item Uno \textbf{normal}, en una zona densa, requiere muchos cortes \vspace{0.3cm}
+\item Un punto \textbf{anómalo} se aísla con \textbf{pocos cortes} (está apartado); uno \textbf{normal}, en zona densa, requiere \textbf{muchos} \vspace{0.25cm}
 
-\item El número promedio de cortes mide la anomalía. Es rápido y escala bien a muchos datos
+\item La anomalía se mide por el número \textbf{promedio} de cortes (pocos = anómalo); rápido y escala bien
 
 \end{itemize}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{Isolation Forest: la intuición}
+
+\begin{columns}
+\begin{column}{0.46\textwidth}
+\footnotesize
+\begin{itemize}
+\item Cada \textbf{nodo} del árbol es un corte aleatorio \vspace{0.3cm}
+\item La \textbf{anomalía} (rojo) cae en una hoja \textbf{poco profunda}: pocos cortes la aíslan \vspace{0.3cm}
+\item Un punto \textbf{normal} (azul) cae en una hoja \textbf{profunda}: hacen falta muchos cortes \vspace{0.3cm}
+\item Puntaje = profundidad \textbf{promedio} en muchos árboles
+\end{itemize}
+\end{column}
+\begin{column}{0.54\textwidth}
+\includegraphics[width=\textwidth]{isoforest.pdf}
+\end{column}
+\end{columns}
 }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -521,20 +530,6 @@ dist(x,y)=\sqrt{\sum_{i=1}^n (x_i-y_i)^2}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\frame{
-  \frametitle{Aplicaciones y al taller}
-
-\begin{itemize}
-\item \textbf{Fraude} financiero y de tarjetas; \textbf{ciberseguridad} (intrusiones) \vspace{0.2cm}
-\item \textbf{Mantenimiento predictivo} (sensores que anticipan fallas) \vspace{0.2cm}
-\item \textbf{Salud} (lecturas anómalas) y \textbf{calidad de datos} (errores de captura) \vspace{0.3cm}
-
-\item \textbf{Al taller}: aplicaremos LOF (paquete \texttt{dbscan}) a un conjunto de \textbf{transacciones} (en 2D) para señalar operaciones atípicas (posible fraude)
-
-\end{itemize}
-}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%   PARTE 4: REPRESENTACIÓN   %%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -565,16 +560,16 @@ dist(x,y)=\sqrt{\sum_{i=1}^n (x_i-y_i)^2}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \frame{
-  \frametitle{Aprendizaje de representación}
+  \frametitle{Extracción de características}
 
 \begin{itemize}
-\item En vez de usar las variables crudas, buscamos una \textbf{representación} más compacta y útil de los datos \vspace{0.3cm}
+\item La \textbf{selección} de variables elige un subconjunto; la \textbf{extracción} crea variables \textbf{nuevas y compuestas} \vspace{0.3cm}
 
-\item Es la versión no supervisada del \textit{feature extraction} que vimos en desempeño \vspace{0.3cm}
+\item Es la versión no supervisada del \textit{feature extraction} de la sesión 4 \vspace{0.3cm}
 
-\item La técnica clásica y más intuitiva: \textbf{Análisis de Componentes Principales} (PCA) \vspace{0.3cm}
+\item La técnica clásica: \textbf{Análisis de Componentes Principales} (PCA), que resume muchas variables \textbf{correlacionadas} en pocas \vspace{0.3cm}
 
-\item (Y la base conceptual de los \textit{embeddings} del aprendizaje profundo)
+\item La matemática exacta se sale del curso; vamos por la \textbf{intuición}
 
 \end{itemize}
 }
@@ -582,14 +577,33 @@ dist(x,y)=\sqrt{\sum_{i=1}^n (x_i-y_i)^2}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \frame{
-  \frametitle{PCA: la idea}
+  \frametitle{PCA: la intuición}
+
+\begin{columns}
+\begin{column}{0.46\textwidth}
+\begin{itemize}
+\item Para predecir si alguien paga un crédito hay decenas de atributos: edad, educación, ingreso, ocupación, código postal\ldots \vspace{0.2cm}
+\item Muchos están \textbf{correlacionados}: reflejan pocas \textbf{dimensiones ocultas} ---p.\,ej. ``responsabilidad'' y ``afluencia'' \vspace{0.2cm}
+\item PCA \textbf{descubre} esas dimensiones compuestas
+\end{itemize}
+\end{column}
+\begin{column}{0.54\textwidth}
+\includegraphics[width=\textwidth]{loan_concept.pdf}
+\end{column}
+\end{columns}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame{
+  \frametitle{¿Qué hace PCA?}
 
 \begin{columns}
 \begin{column}{0.52\textwidth}
 \begin{itemize}
-\item PCA encuentra nuevas variables (\textbf{componentes}) que son combinaciones lineales de las originales \vspace{0.2cm}
-\item La 1.ª componente apunta en la dirección de \textbf{máxima varianza} \vspace{0.2cm}
-\item Las siguientes son ortogonales y captan la varianza restante
+\item Resume la \textbf{covarianza} de variables correlacionadas en pocos \textbf{componentes} (combinaciones lineales de las originales) \vspace{0.2cm}
+\item El primero apunta en la dirección de \textbf{máxima varianza}; los demás son \textbf{ortogonales} y captan lo que queda \vspace{0.2cm}
+\item Es \textbf{determinista}; los componentes resumen los datos pero \textbf{no} tienen un significado directo
 \end{itemize}
 \end{column}
 \begin{column}{0.48\textwidth}
@@ -601,35 +615,18 @@ dist(x,y)=\sqrt{\sum_{i=1}^n (x_i-y_i)^2}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \frame{
-  \frametitle{PCA: ¿cómo funciona?}
-
-\begin{itemize}
-\item Buscamos direcciones que maximicen la \textbf{varianza} de los datos proyectados \vspace{0.3cm}
-
-\item Esas direcciones son los \textbf{autovectores} de la matriz de covarianzas; cada \textbf{autovalor} dice cuánta varianza captura su dirección \vspace{0.3cm}
-
-\item Las componentes son \textbf{ortogonales} (no correlacionadas) y se ordenan de mayor a menor varianza \vspace{0.3cm}
-
-\item Intuición, sin fórmulas: ``girar los ejes'' para alinearlos con la mayor dispersión de la nube de puntos
-
-\end{itemize}
-}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\frame{
-  \frametitle{PCA: de 30 variables a 2}
+  \frametitle{¿Cuántos componentes? (scree plot)}
 
 \begin{columns}
 \begin{column}{0.5\textwidth}
 \begin{itemize}
-\item Tomamos las 30 variables del cáncer de seno (sesión 1) \vspace{0.2cm}
-\item Las proyectamos en sus 2 primeras componentes \vspace{0.2cm}
-\item Aunque PCA \textbf{no} usa el diagnóstico, los benignos y malignos quedan casi separados
+\item Cada componente capta una fracción \textbf{decreciente} de la varianza \vspace{0.2cm}
+\item El \textbf{scree plot} muestra ese aporte; nos quedamos en el ``codo'' \vspace{0.2cm}
+\item Ejemplo (redes sociales, 36 palabras): caída fuerte tras el primero; con 5 componentes capturamos $\sim$27\% de la varianza
 \end{itemize}
 \end{column}
 \begin{column}{0.5\textwidth}
-\includegraphics[width=\textwidth]{pca_projection.pdf}
+\includegraphics[width=\textwidth]{teens_scree.pdf}
 \end{column}
 \end{columns}
 }
@@ -637,37 +634,18 @@ dist(x,y)=\sqrt{\sum_{i=1}^n (x_i-y_i)^2}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \frame{
-  \frametitle{¿Cuántas componentes?}
+  \frametitle{Interpretar con los \textit{loadings}}
 
 \begin{columns}
 \begin{column}{0.5\textwidth}
 \begin{itemize}
-\item Cada componente explica una fracción de la \textbf{varianza} total \vspace{0.2cm}
-\item Aquí, las 2 primeras ya capturan $\sim$63\% \vspace{0.2cm}
-\item Nos quedamos con las que acumulan ``suficiente'' (otra vez, el codo)
+\item Los \textbf{loadings} (pesos) dicen cuánto aporta cada variable original a un componente \vspace{0.2cm}
+\item Mirándolos le damos \textbf{sentido} a un componente, aunque PCA no lo etiquete \vspace{0.2cm}
+\item El PC3 de los teens separa \textbf{religión} (jesus, bible, church) de \textbf{fiesta} (drunk, drugs, sex)
 \end{itemize}
 \end{column}
 \begin{column}{0.5\textwidth}
-\includegraphics[width=\textwidth]{pca_scree.pdf}
-\end{column}
-\end{columns}
-}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\frame{
-  \frametitle{Interpretar las componentes}
-
-\begin{columns}
-\begin{column}{0.5\textwidth}
-\begin{itemize}
-\item Cada componente es una \textbf{mezcla} de las variables originales \vspace{0.2cm}
-\item Los \textbf{pesos} (\textit{loadings}) dicen cuánto aporta cada variable \vspace{0.2cm}
-\item Mirándolos le damos sentido a la componente (aquí, PC1 $\approx$ ``tamaño/severidad'' del tumor)
-\end{itemize}
-\end{column}
-\begin{column}{0.5\textwidth}
-\includegraphics[width=\textwidth]{pca_loadings.pdf}
+\includegraphics[width=\textwidth]{teens_pc3.pdf}
 \end{column}
 \end{columns}
 }
@@ -678,53 +656,15 @@ dist(x,y)=\sqrt{\sum_{i=1}^n (x_i-y_i)^2}
   \frametitle{¿Para qué usar PCA?}
 
 \begin{itemize}
-\item \textbf{Compresión}: menos columnas, menos cómputo y almacenamiento \vspace{0.3cm}
+\item \textbf{Compresión} y \textbf{visualización} (graficar en 2--3 componentes) \vspace{0.3cm}
 
-\item \textbf{Visualización}: graficar en 2 o 3 componentes \vspace{0.3cm}
+\item \textbf{Quitar multicolinealidad} antes de una regresión (los componentes no están correlacionados) \vspace{0.3cm}
 
-\item \textbf{Quitar multicolinealidad} antes de una regresión (las componentes no están correlacionadas) \vspace{0.3cm}
+\item \textbf{Preprocesamiento}: con pocas componentes, métodos como kNN o redes neuronales se vuelven factibles \vspace{0.3cm}
 
-\item \textbf{Preprocesamiento} para otros modelos \vspace{0.3cm}
-
-\item Costo: las componentes son \textbf{menos interpretables} que las variables originales
+\item Costo: los componentes son \textbf{menos interpretables} que las variables originales
 
 \end{itemize}
-}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\frame{
-  \frametitle{Más allá de PCA: t-SNE y UMAP}
-
-\begin{itemize}
-\item PCA es \textbf{lineal}. Para estructuras curvas hay métodos no lineales \vspace{0.3cm}
-
-\item \textbf{t-SNE} y \textbf{UMAP}: pensados sobre todo para \textbf{visualizar} datos de alta dimensión en 2D \vspace{0.3cm}
-
-\item Preservan la \textbf{vecindad local}: puntos parecidos quedan cerca \vspace{0.3cm}
-
-\item Muy usados para explorar imágenes, texto o datos genéticos
-
-\end{itemize}
-}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\frame{
-  \frametitle{t-SNE/UMAP: cómo leerlos}
-
-\begin{columns}
-\begin{column}{0.5\textwidth}
-\begin{itemize}
-\item Lo \textbf{cercano} es similar; los grupos saltan a la vista \vspace{0.2cm}
-\item \textbf{Cuidado}: NO conservan distancias globales ni tamaños de cluster \vspace{0.2cm}
-\item No interpretes el tamaño de los grupos ni qué tan separados están como algo literal
-\end{itemize}
-\end{column}
-\begin{column}{0.5\textwidth}
-\includegraphics[width=\textwidth]{tsne_concept.pdf}
-\end{column}
-\end{columns}
 }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -768,23 +708,6 @@ dist(x,y)=\sqrt{\sum_{i=1}^n (x_i-y_i)^2}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \frame{
-  \frametitle{Al taller}
-
-\begin{itemize}
-\item Aplicaremos \textbf{PCA} a las 30 variables del cáncer de seno (\texttt{wisc\_bc\_data.csv}) \vspace{0.3cm}
-
-\item Con la función \texttt{prcomp()} de R base \vspace{0.3cm}
-
-\item Veremos la varianza explicada y proyectaremos los datos en 2 dimensiones \vspace{0.3cm}
-
-\item Comprobando cuánta estructura se conserva al reducir de 30 a 2
-
-\end{itemize}
-}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\frame{
   \frametitle{Resumen de la sesión}
 
 \begin{itemize}
@@ -794,7 +717,7 @@ dist(x,y)=\sqrt{\sum_{i=1}^n (x_i-y_i)^2}
 
 \item \textbf{Detección de anomalías}: estadística, distancia, densidad (LOF) o modelos (isolation forest); el contexto define el umbral \vspace{0.3cm}
 
-\item \textbf{Representación}: PCA resume muchas variables en pocas componentes; t-SNE/UMAP visualizan; los \textit{embeddings} y \textit{autoencoders} extienden la idea hacia el aprendizaje profundo
+\item \textbf{Representación}: PCA resume muchas variables en pocas componentes; los \textit{embeddings} y \textit{autoencoders} extienden la idea hacia el aprendizaje profundo
 
 \end{itemize}
 }

@@ -1,0 +1,133 @@
+---
+title: "Taller sintético: aprendizaje no supervisado (S5)"
+output:
+ html_notebook: default
+---
+
+# 1. Introducción
+
+\
+
+- Sin etiquetas, el objetivo es **descubrir estructura**. Recorremos las **tres tareas** de la sesión sobre **una sola base**.
+
+- Usamos el **cáncer de seno** (`wisc_bc_data.csv`): 30 medidas del núcleo celular de 569 biopsias. Ignoramos el diagnóstico al agrupar; lo usamos solo al final para validar.
+
+- Cada tarea sale con **una función**: `kmeans()` (clustering), `lof()` (anomalías) y `prcomp()` (PCA).
+
+\
+
+# 2. Datos
+
+\
+
+```{r, eval=FALSE}
+install.packages("dbscan")
+```
+
+\
+
+- Único preprocesamiento: tomar las 30 medidas y **estandarizarlas** (para que ninguna domine por su escala):
+
+\
+
+```{r, message=FALSE, warning=FALSE}
+library(dbscan)
+bc <- read.csv("data/wisc_bc_data.csv")
+X  <- scale(bc[, 3:32])   # 30 variables numéricas (sin id ni diagnóstico)
+dim(X)
+```
+
+\
+
+# 3. Clustering con k-medias
+
+\
+
+- `kmeans()` agrupa las biopsias en `k=2` grupos, **sin ver** el diagnóstico:
+
+\
+
+```{r}
+set.seed(123)
+km <- kmeans(X, centers = 2)
+km$size
+```
+
+\
+
+- ¿Los grupos tienen sentido? Los cruzamos con el diagnóstico real (que no usamos para agrupar):
+
+\
+
+```{r}
+table(cluster = km$cluster, diagnostico = bc$diagnosis)
+```
+
+\
+
+- Sin etiquetas, el clustering **recupera** en buena medida la separación benigno/maligno.
+
+\
+
+# 4. Detección de anomalías (LOF)
+
+\
+
+- `lof()` da a cada biopsia un puntaje: $\approx 1$ es normal, $\gg 1$ es atípico (vive en una zona poco densa):
+
+\
+
+```{r}
+bc$lof <- lof(X, minPts = 20)
+round(summary(bc$lof), 2)   # distribución de los puntajes
+```
+
+\
+
+- Las 5 biopsias más atípicas:
+
+\
+
+```{r}
+head(bc[order(-bc$lof), c("diagnosis", "radius_mean", "area_mean", "lof")], 5)
+```
+
+\
+
+# 5. PCA: representar y visualizar
+
+\
+
+- `prcomp()` resume las 30 variables en pocas componentes. Varianza de las primeras:
+
+\
+
+```{r}
+pca <- prcomp(X)
+round(summary(pca)$importance[, 1:5], 3)
+```
+
+\
+
+- Proyectamos a 2 dimensiones y vemos **las tres cosas a la vez**: color = cluster, círculos negros = el 2\% más atípico (LOF):
+
+\
+
+```{r, fig.width=6, fig.height=5}
+anom <- bc$lof >= quantile(bc$lof, 0.98)
+plot(pca$x[, 1:2], col = km$cluster, pch = 19, cex = 0.6,
+     main = "Biopsias en 2 componentes principales", xlab = "PC1", ylab = "PC2")
+points(pca$x[anom, 1:2], pch = 1, cex = 2, col = "black", lwd = 1.5)
+```
+
+\
+
+# 6. Cierre
+
+\
+
+- Con **una sola base** vimos las tres caras del aprendizaje no supervisado:
+  - **Clustering** (`kmeans`): agrupa sin etiquetas; aquí recupera casi benigno/maligno.
+  - **Anomalías** (`lof`): marca los casos raros, sin etiquetas.
+  - **PCA** (`prcomp`): resume 30 variables en 2 para visualizar (mostrando de paso los grupos y las anomalías).
+- Todo con **una función** por tarea y **estandarizar** como único preprocesamiento.
