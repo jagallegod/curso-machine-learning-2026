@@ -7,6 +7,8 @@ Curso introductorio y aplicado de *machine learning* para economía y políticas
 
 📄 **[Syllabus del curso (PDF)](syllabus.pdf)**
 
+📄 **[Enunciado del trabajo final (PDF)](trabajo_final.pdf)**
+
 ## Cómo usar este repositorio
 
 - **Slides**: PDF (se abren directamente en GitHub).
